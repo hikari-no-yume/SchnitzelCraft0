@@ -169,7 +169,8 @@ void backupmap(){
     puts("Beginning map backup...");
     
 	//if (fopen_s(&fp, "backups\\backupinc.sys", "rb")==0){
-    if ((fp = fopen("backups\\backupinc.sys", "rb"))!=NULL){
+    fp = fopen("backups\\backupinc.sys", "rb");
+    if (fp!=NULL){
 		fread(&backupinc, sizeof(backupinc), 1, fp);
 		fclose(fp);
 	}
@@ -190,7 +191,8 @@ void backupmap(){
 	printf("done.\n");
 
 	//if (fopen_s(&fp, "backups\\backupinc.sys", "wb")==0){
-    if ((fp = fopen("backups\\backupinc.sys", "wb"))!=NULL){
+    fp = fopen("backups\\backupinc.sys", "wb");
+    if (fp!=NULL){
 		fwrite(&backupinc, sizeof(backupinc), 1, fp);
 		fclose(fp);
 	}
@@ -734,8 +736,9 @@ exitloop:
 								printf("Compressing map data...");
 								//if (fopen_s(&fpin, "backups\\backup.dat", "rb")==0
 								//	&&fopen_s(&fpout, "map.gz", "wb")==0){
-								if ((fpin = fopen("backups\\backup.dat", "rb")) != NULL
-									&&(fpout = fopen("map.gz", "wb"))!=NULL){
+                                fpin = fopen("backups\\backup.dat", "rb");
+                                fpout = fopen("map.gz", "wb");
+								if (fpin != NULL && fpout != NULL){
 									k = def(fpin,fpout,9);
 									if (k!=Z_OK){
 										printf("Error compressing data: ");
