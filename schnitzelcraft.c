@@ -366,7 +366,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		mob[i].respawn = 0;
 		//strcpy(&mob[i].name, "ZombieMob                                                       ");
 		memset(&mob[i].name, ' ', 64);
-		memcpy(&mob[i].name, "ZombieMob", 9);
+		memcpy(&mob[i].name, "&2Zombie&7Mob", 13);
 	}
 
 	// init
