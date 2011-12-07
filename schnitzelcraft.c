@@ -206,7 +206,7 @@ void sendPacket_setBlock(SOCKET socket, short x, short y, short z, char type){
 
 
 void backupmap(){
-    uint32_t header;
+    int32_t header;
     FILE* fp;
     char fname[255];
     int backupinc = 0;
@@ -230,7 +230,7 @@ void backupmap(){
     fp = fopen("backups\\backup.dat", "wb");
     //fopen_s(&fp, "backups\\backup.dat", "wb");
     header = htonl(mapsize);
-    fwrite(&header,sizeof(uint32_t),1,fp);
+    fwrite(&header,sizeof(int32_t),1,fp);
     fwrite(block,sizeof(char)*mapsize,1,fp);
     fclose(fp);
     printf("done.\n");
@@ -337,7 +337,7 @@ void generateMap(int type) {
 int main(int argc, char* argv[])
 {
     // Vars
-    const unsigned int DEFAULT_PORT = 25565;
+    const int DEFAULT_PORT = 25565;
     const char welcomebuf[] = "AJF's Minecraft Server powered by SchnitzelCraft                gg2 is awesome etc...                                           ";
     int j = 0, i = 0, k = 0, l = 0, m = 0, physx, physy, physz, lastmsg = 65, thisclient = 0, sal = 0, filesize = 0, iMode = 1;
     int32_t int32buf = 0;
