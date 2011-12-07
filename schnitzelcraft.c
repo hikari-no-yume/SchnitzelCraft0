@@ -237,30 +237,22 @@ char touchinglr(short x, short y, short z, char type){
 
 void generateMap(int type) {
     int i, j, k;
-    char *blockp;
     
     switch (type) {
         case 0: // Half flatgrass, half sand
             for (i=0;i<mapx;i++){
                 for (j=0;j<mapz;j++){
-                    blockp=blockAt(i,0,j);
-                    *blockp=0x0C; // Sand
-                    blockp=blockAt(i,mapy/2-3,j);
+                    setBlock(i,0,j,0x0C); // Sand
                     if (j!=0&&i!=0){
-                        *blockp=0x07; // Bedrock (indestructible)
+                        setBlock(i,mapy/2-3,j,0x07); // Bedrock (indestructible)
                     }else{
-                        *blockp=0x09; // Stationary Water (indestructible)
+                        setBlock(i,mapy/2-3,j,0x09); // Stationary Water (indestructible)
                     }
-                    blockp=blockAt(i,mapy/2-2,j);
-                    *blockp=0x08; // Liquid Water
-                    blockp=blockAt(i,mapy/2-1,j);
-                    *blockp=0x08; // Liquid Water
-                    blockp=blockAt(i,mapy/2,j);
-                    *blockp=0x03; // Dirt
-                    blockp=blockAt(i,mapy/2+1,j);
-                    *blockp=0x03; // Dirt
-                    blockp=blockAt(i,mapy/2+2,j);
-                    *blockp=0x02; // Grass
+                    setBlock(i,mapy/2-2,j,0x08); // Liquid Water
+                    setBlock(i,mapy/2-1,j,0x08); // Liquid Water
+                    setBlock(i,mapy/2,j,0x03); // Dirt
+                    setBlock(i,mapy/2+1,j,0x03); // Dirt
+                    setBlock(i,mapy/2+2,j,0x02); // Grass
                 }
             }
             break;
@@ -270,14 +262,13 @@ void generateMap(int type) {
                     int height;
                     height = (int)((noise(i*0.025f,j*0.025f)+1.0f)*(mapy/8))+mapy/4;
                     for (k = 0;k<height;k++){
-                        blockp=blockAt(i,k,j);
                         if (height>(mapy/4)+(mapy/6)){
-                            *blockp=0x01; // Stone
+                            setBlock(i,k,j,0x01); // Stone
                         }else{
                             if (k!=height-1){
-                                *blockp=0x03; // Dirt
+                                setBlock(i,k,j,0x03); // Dirt
                             }else{
-                                *blockp=0x02; // Grass
+                                setBlock(i,k,j,0x02); // Grass
                             }
                         }
                     }
@@ -286,31 +277,20 @@ void generateMap(int type) {
             break;
     }
     for (i=1;i<(mapy/2)+4;i++){ // Builds route to surface
-        blockp=blockAt(0,i,0);
-        *blockp=0x07; // Bedrock (indestructible)
-        blockp=blockAt(1,i,0);
-        *blockp=0x07; // Bedrock (indestructible)
-        blockp=blockAt(0,i,1);
-        *blockp=0x07; // Bedrock (indestructible)
-        blockp=blockAt(1,i,1);
-        *blockp=0x09; // Stationary Water (indestructible)
-        blockp=blockAt(2,i,2);
-        *blockp=0x07; // Bedrock (indestructible)
+        setBlock(0,i,0,0x07); // Bedrock (indestructible)
+        setBlock(1,i,0,0x07); // Bedrock (indestructible)
+        setBlock(0,i,1,0x07); // Bedrock (indestructible)
+        setBlock(1,i,1,0x09); // Stationary Water (indestructible)
+        setBlock(2,i,2,0x07); // Bedrock (indestructible)
         if (i>3){
-            blockp=blockAt(2,i,1);
-            *blockp=0x07; // Bedrock (indestructible)
-            blockp=blockAt(1,i,2);
-            *blockp=0x07; // Bedrock (indestructible)
+            setBlock(2,i,1,0x07); // Bedrock (indestructible)
+            setBlock(1,i,2,0x07); // Bedrock (indestructible)
         }else{
-            blockp=blockAt(2,i,1);
-            *blockp=0x09; // Stationary Water (indestructible)
-            blockp=blockAt(1,i,2);
-            *blockp=0x09; // Stationary Water (indestructible)
+            setBlock(2,i,1,0x09); // Stationary Water (indestructible)
+            setBlock(1,i,2,0x09); // Stationary Water (indestructible)
         }
-        blockp=blockAt(2,i,0);
-        *blockp=0x07; // Bedrock (indestructible)
-        blockp=blockAt(0,i,2);
-        *blockp=0x07; // Bedrock (indestructible)
+        setBlock(2,i,0,0x07); // Bedrock (indestructible)
+        setBlock(0,i,2,0x07); // Bedrock (indestructible)
     }
 }
 
