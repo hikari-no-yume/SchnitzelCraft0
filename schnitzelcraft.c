@@ -473,36 +473,28 @@ int main(int argc, char* argv[])
                                         client[i].name[64]='\0'; // Null terminate
                                         printf("Client %d identified: ", i);
                                         printf(client[i].name);
-                                        if (client[i].name[0]=='K'&&client[i].name[1]=='i'){
-                                            sendByte(client[i].socket, 0x0e); // Kick
-                                            printf("Client %d banned\n", i);
-                                            closesocket(client[i].socket);
-                                            client[i].used=0;
-                                            goto exitloop;
-                                        }else{
-                                            recvByteArray(client[i].socket, outbuf, 64); // Skip Verification Key
-                                            recvByte(client[i].socket); // Skip Unused byte
-                                            client[i].stage = 1;
-                                            for (j=0;j<maxclients;j++){ // Yay EVEN MOAR dirty hax
-                                                if (client[j].used==1&&j!=i&&client[j].stage==4){
-                                                    sendByte(client[j].socket, 0x07); // Player Spawn
-                                                    sendByte(client[j].socket, i); // Player ID
-                                                    sendByteArray(client[j].socket, client[i].name, 64); // Name
-                                                    sendInt16(client[j].socket, client[i].x); // X
-                                                    sendInt16(client[j].socket, client[i].y); // Y
-                                                    sendInt16(client[j].socket, client[i].z); // Z
-                                                    sendByte(client[j].socket, client[i].heading); // Heading
-                                                    sendByte(client[j].socket, client[i].pitch); // Pitch
-                                                    outbuf[0]='&';
-                                                    outbuf[1]='e'; // Green
-                                                    outbuf[2]='J';
-                                                    outbuf[3]='O';
-                                                    outbuf[4]='I';
-                                                    outbuf[5]='N';
-                                                    outbuf[6]=' ';
-                                                    memcpy(&outbuf[7], &client[i].name, 57);
-                                                    sendPacket_chatMessage(client[j].socket, i, outbuf);
-                                                }
+                                        recvByteArray(client[i].socket, outbuf, 64); // Skip Verification Key
+                                        recvByte(client[i].socket); // Skip Unused byte
+                                        client[i].stage = 1;
+                                        for (j=0;j<maxclients;j++){ // Yay EVEN MOAR dirty hax
+                                            if (client[j].used==1&&j!=i&&client[j].stage==4){
+                                                sendByte(client[j].socket, 0x07); // Player Spawn
+                                                sendByte(client[j].socket, i); // Player ID
+                                                sendByteArray(client[j].socket, client[i].name, 64); // Name
+                                                sendInt16(client[j].socket, client[i].x); // X
+                                                sendInt16(client[j].socket, client[i].y); // Y
+                                                sendInt16(client[j].socket, client[i].z); // Z
+                                                sendByte(client[j].socket, client[i].heading); // Heading
+                                                sendByte(client[j].socket, client[i].pitch); // Pitch
+                                                outbuf[0]='&';
+                                                outbuf[1]='e'; // Green
+                                                outbuf[2]='J';
+                                                outbuf[3]='O';
+                                                outbuf[4]='I';
+                                                outbuf[5]='N';
+                                                outbuf[6]=' ';
+                                                memcpy(&outbuf[7], &client[i].name, 57);
+                                                sendPacket_chatMessage(client[j].socket, i, outbuf);
                                             }
                                         }
                                     }else{
