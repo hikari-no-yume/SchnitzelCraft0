@@ -170,20 +170,50 @@ int socket_recv(SOCKET s, void *buf, int len){
     return recv(s, (char*)buf, len, 0); // Recieve
 }
 
+size_t sendByte(SOCKET socket, char value) {
+    return send(socket, (char*)&value, sizeof(char), 0);
+}
+size_t sendByteArray(SOCKET socket, char *array, int len) {
+    return send(socket, (char*)array, sizeof(char)*len, 0);
+}
+size_t sendInt16(SOCKET socket, int16_t value) {
+    value = htons(value);
+    return send(socket, (char*)&value, sizeof(int16_t), 0);
+}
+size_t sendInt32(SOCKET socket, int32_t value) {
+    value = htonl(value);
+    return send(socket, (char*)&value, sizeof(int32_t), 0);
+}
+
+char recvByte(SOCKET socket) {
+    char value;
+    recv(socket, (char*)&value, sizeof(char), 0);
+    return value;
+}
+char* recvByteArray(SOCKET socket, char *array, int len) {
+    recv(socket, (char*)array, sizeof(char)*len, 0);
+    return array;
+}
+int16_t recvInt16(SOCKET socket) {
+    int16_t value;
+    recv(socket, (char*)&value, sizeof(int16_t), 0);
+    return ntohs(value);
+}
+int32_t recvInt32(SOCKET socket) {
+    int32_t value;
+    recv(socket, (char*)&value, sizeof(int32_t), 0);
+    return ntohl(value);
+}
+
 void sendPacket_setBlock(SOCKET socket, short x, short y, short z, char type){
     uint8_t bytebuf;
     int16_t int16buf;
     
-    bytebuf=0x06; // Set Block
-    socket_send(socket, &bytebuf, 1);
-    int16buf=htons(x);
-    socket_send(socket, &int16buf, sizeof(int16_t)); // X
-    int16buf=htons(y);
-    socket_send(socket, &int16buf, sizeof(int16_t)); // Y
-    int16buf=htons(z);
-    socket_send(socket, &int16buf, sizeof(int16_t)); // Z
-    bytebuf=type;
-    socket_send(socket, &bytebuf, sizeof(uint8_t)); // Block Type
+    sendByte(socket, 0x06); // Set Block
+    sendInt16(socket, x); // X
+    sendInt16(socket, y); // Y
+    sendInt16(socket, z); // Z
+    sendByte(socket, type); // Block Type
 }
 
 
@@ -443,44 +473,37 @@ int main(int argc, char* argv[])
                     // *** RECV BEGIN ***
                     //if (FD_ISSET(client[i].socket, &readable)){
                     while(FD_ISSET(client[i].socket, &readable)){
-                        socket_recv(client[i].socket, &inbuf, 1);
-                        switch (inbuf[0]){
+                        switch (recvByte(client[i].socket)){
                             case 0x00:
                                 if (client[i].stage==0){
-                                    socket_recv(client[i].socket, &client[i].protocol, 1);
+                                    client[i].protocol = recvByte(client[i].socket);
                                     if (client[i].protocol[0] == 0x07){ // 7
-                                        socket_recv(client[i].socket, &client[i].name, 64); // Get Name
+                                        recvByteArray(client[i].socket, client[i].name, 64); // Get Name
                                         client[i].name[64]='\0'; // Null terminate
                                         printf("Client %d identified: ", i);
                                         printf(client[i].name);
                                         if (client[i].name[0]=='K'&&client[i].name[1]=='i'){
-                                            outbuf[0]=0x0e; // Kick
-                                            socket_send(client[i].socket, &outbuf, 1);
+                                            sendByte(client[i].socket, 0x0e); // Kick
                                             printf("Client %d banned\n", i);
                                             closesocket(client[i].socket);
                                             client[i].used=0;
                                             goto exitloop;
                                         }else{
-                                            socket_recv(client[i].socket, &outbuf, 64); // Skip Verification Key
-                                            socket_recv(client[i].socket, &inbuf, 1); // Skip Unused byte
+                                            recvByteArray(client[i].socket, outbuf, 64); // Skip Verification Key
+                                            recvByte(client[i].socket); // Skip Unused byte
                                             client[i].stage = 1;
                                             for (j=0;j<maxclients;j++){ // Yay EVEN MOAR dirty hax
                                                 if (client[j].used==1&&j!=i&&client[j].stage==4){
-                                                    outbuf[0]=0x07; // Player Spawn
-                                                    outbuf[1]=i; // Player ID
-                                                    socket_send(client[j].socket, outbuf, 2);
-                                                    socket_send(client[j].socket, &client[i].name, 64); // Name
-                                                    int16buf=htons(client[i].x); // Correct Endianness
-                                                    socket_send(client[j].socket, &int16buf, sizeof(short)); // X
-                                                    int16buf=htons(client[i].y); // Correct Endianness
-                                                    socket_send(client[j].socket, &int16buf, sizeof(short)); // Y
-                                                    int16buf=htons(client[i].z); // Correct Endianness
-                                                    socket_send(client[j].socket, &int16buf, sizeof(short)); // Z
-                                                    socket_send(client[j].socket, &client[i].heading, sizeof(char)); // Heading
-                                                    socket_send(client[j].socket, &client[i].pitch, sizeof(char)); // Pitch
-                                                    outbuf[0]=0x0d; // Chat Message
-                                                    outbuf[1]=i; // Player ID
-                                                    socket_send(client[j].socket, &outbuf, 2);
+                                                    sendByte(client[j].socket, 0x07); // Player Spawn
+                                                    sendByte(client[j].socket, i); // Player ID
+                                                    sendByteArray(client[j].socket, client[i].name, 64); // Name
+                                                    sendInt16(client[j].socket, client[i].x); // X
+                                                    sendInt16(client[j].socket, client[i].y); // Y
+                                                    sendInt16(client[j].socket, client[i].z); // Z
+                                                    sendByte(client[j].socket, client[i].heading); // Heading
+                                                    sendByte(client[j].socket, client[i].pitch); // Pitch
+                                                    sendByte(client[j].socket, 0x0d); // Chat Message
+                                                    sendByte(client[j].socket, i); // Player ID
                                                     outbuf[0]='&';
                                                     outbuf[1]='e'; // Green
                                                     outbuf[2]='J';
@@ -489,13 +512,13 @@ int main(int argc, char* argv[])
                                                     outbuf[5]='N';
                                                     outbuf[6]=' ';
                                                     memcpy(&outbuf[7], &client[i].name, 57);
-                                                    socket_send(client[j].socket, &outbuf, 64);
+                                                    sendByteArray(client[j].socket, outbuf, 64);
                                                 }
                                             }
                                         }
                                     }else{
                                         memcpy((char*)&outbuf, "\x0eIncompatible Protocol Version                                   ", 65);
-                                        socket_send(client[i].socket, &outbuf, 65);
+                                        sendByteArray(client[i].socket, outbuf, 65);
                                         printf("Client %d kicked: Incompatible Protocol Version ", i);
                                         printf("(%d)\n", client[i].protocol[0]);
                                         closesocket(client[i].socket);
@@ -508,17 +531,14 @@ int main(int argc, char* argv[])
                                     client[i].used=0;
                                     for (j=0;j<maxclients;j++){ // ZOMG MOAR HAX
                                         if (client[j].used==1&&client[j].stage==4){
-                                            outbuf[0]=0x0c; // Despawn
-                                            outbuf[1]=i;
-                                            socket_send(client[j].socket, &outbuf, 2);
+                                            sendByte(client[j].socket, 0x0c); // Despawn
+                                            sendByte(client[j].socket, i);
                                             if (flippy==1){
-                                                outbuf[0]=0x0c; // Despawn Flippy
-                                                outbuf[1]=64+i;
-                                                socket_send(client[j].socket, &outbuf, 2);
+                                                sendByte(client[j].socket, 0x0c);  // Despawn Flippy
+                                                sendByte(client[j].socket, 64+i);
                                             }
-                                            outbuf[0]=0x0d; // Chat Message
-                                            outbuf[1]=i; // Player ID
-                                            socket_send(client[j].socket, &outbuf, 2);
+                                            sendByte(client[j].socket, 0x0d); // Chat Message
+                                            sendByte(client[j].socket, i); // Player ID
                                             outbuf[0]='&'; // Yellow
                                             outbuf[1]='c';
                                             outbuf[2]='P';
@@ -527,7 +547,7 @@ int main(int argc, char* argv[])
                                             outbuf[5]='T';
                                             outbuf[6]=' ';
                                             memcpy(&outbuf[7], &client[i].name, 57);
-                                            socket_send(client[j].socket, &outbuf, 64);
+                                            sendByteArray(client[j].socket, outbuf, 64);
                                         }
                                     }
                                     backupmap(); // Save map backup
@@ -540,11 +560,11 @@ int main(int argc, char* argv[])
                                 {
                                     struct BLOCKCHANGE bc;
                                     bc.player = i;
-                                    socket_recv(client[i].socket, &bc.x, sizeof(short)); // X
-                                    socket_recv(client[i].socket, &bc.y, sizeof(short)); // Y
-                                    socket_recv(client[i].socket, &bc.z, sizeof(short)); // Z
-                                    socket_recv(client[i].socket, &inbuf, 1); // Get Mode
-                                    socket_recv(client[i].socket, &bc.newvalue, sizeof(char)); // Block type
+                                    bc.x = recvInt16(client[i].socket); // X
+                                    bc.y = recvInt16(client[i].socket); // Y
+                                    bc.z = recvInt16(client[i].socket); // Z
+                                    inbuf[0] = recvByte(client[i].socket); // Get Mode
+                                    bc.newvalue = recvByte(client[i].socket); // Block type
                                     if (inbuf[0]==0x00){ // If deleted
                                         bc.newvalue=0x00; // Air (deleted)
                                     }
@@ -552,61 +572,56 @@ int main(int argc, char* argv[])
                                         bc.newvalue=0x08; // Liquid Water
                                     } // Disabled due to water physics
                                     if (bc.newvalue==0x2C){ // Step
-                                        if (getBlock(ntohs(bc.x),ntohs(bc.y)-1,ntohs(bc.z))==0x2C){
-                                            sendPacket_setBlock(client[i].socket, ntohs(bc.x), ntohs(bc.y), ntohs(bc.z), 0x00); // Air
+                                        if (getBlock(bc.x,bc.y-1,bc.z)==0x2C){
+                                            sendPacket_setBlock(client[i].socket, bc.x, bc.y, bc.z, 0x00); // Air
                                             bc.newvalue=0x2B; // Double Step
-                                            bc.y = htons(ntohs(bc.y) - 1);
+                                            bc.y -= 1;
                                         }
                                     }
-                                    if (bc.newvalue==0x03&&touching(ntohs(bc.x),ntohs(bc.y),ntohs(bc.z),0x02)>0){ // If dirt touching grass
+                                    if (bc.newvalue==0x03&&touching(bc.x,bc.y,bc.z,0x02)>0){ // If dirt touching grass
                                         bc.newvalue=0x02; // Grass
                                     }
-                                    if (getBlock(ntohs(bc.x),ntohs(bc.y),ntohs(bc.z))==0x07||getBlock(ntohs(bc.x),ntohs(bc.y),ntohs(bc.z))==0x09){ // If indestructible
-                                        bc.newvalue=getBlock(ntohs(bc.x),ntohs(bc.y),ntohs(bc.z));
+                                    if (getBlock(bc.x,bc.y,bc.z)==0x07||getBlock(bc.x,bc.y,bc.z)==0x09){ // If indestructible
+                                        bc.newvalue=getBlock(bc.x,bc.y,bc.z);
                                     }
-                                    setBlock(ntohs(bc.x),ntohs(bc.y),ntohs(bc.z),bc.newvalue);
+                                    setBlock(bc.x,bc.y,bc.z,bc.newvalue);
                                     for (j=0;j<maxclients;j++){ // Yay moar dirty hax
                                         if (client[j].used==1&&client[j].stage==4){
                                             sendPacket_setBlock(client[j].socket, bc.x, bc.y, bc.z, bc.newvalue);
                                         }
                                     }
-                                    physx=ntohs(bc.x);
-                                    physy=ntohs(bc.y);
-                                    physz=ntohs(bc.z);
+                                    physx=bc.x;
+                                    physy=bc.y;
+                                    physz=bc.z;
                                 }
                             break;
                             case 0x08: // Position/Orientation
-                                socket_recv(client[i].socket, &inbuf, 1); // Skip Player ID
-                                socket_recv(client[i].socket, &client[i].x, 2); // Get new Player X
-                                client[i].x=ntohs(client[i].x); // Correct Endianness
-                                socket_recv(client[i].socket, &client[i].y, 2); // Get new Player Y
-                                client[i].y=ntohs(client[i].y); // Correct Endianness
-                                socket_recv(client[i].socket, &client[i].z, 2); // Get new Player Z
-                                client[i].z=ntohs(client[i].z); // Correct Endianness
-                                socket_recv(client[i].socket, &client[i].heading, 1); // Get new Player Heading
-                                socket_recv(client[i].socket, &client[i].pitch, 1); // Get new Player Pitch
+                                recvByte(client[i].socket); // Skip Player ID
+                                client[i].x = recvInt16(client[i].socket); // Get new Player X
+                                client[i].y = recvInt16(client[i].socket); // Get new Player Y
+                                client[i].z = recvInt16(client[i].socket); // Get new Player Z
+                                client[i].heading = recvByte(client[i].socket); // Get new Player Heading
+                                client[i].pitch = recvByte(client[i].socket); // Get new Player Pitch
                             break;
                             case 0x0d: // Chat Message
-                                socket_recv(client[i].socket, &inbuf, 1); // Skip Player ID
-                                socket_recv(client[i].socket, &inbuf, 64); // Recieve message
+                                recvByte(client[i].socket); // Skip Player ID
+                                recvByteArray(client[i].socket, inbuf, 64); // Recieve message
                                 for (j=0;j<maxclients;j++){ // Yay dirty hax
                                     if (client[j].used==1&&client[j].stage==4){
                                         if (lastmsg!=i){
-                                            outbuf[0]=0x0d; // Chat Message
-                                            outbuf[1]=i; // Player ID
-                                            socket_send(client[j].socket, &outbuf, 2);
+                                            sendByte(client[j].socket, 0x0d); // Chat Message
+                                            sendByte(client[j].socket, i); // Player ID
                                             outbuf[0]='&'; // Yellow
                                             outbuf[1]='e';
                                             memcpy(&outbuf[2], &client[i].name, 62);
-                                            socket_send(client[j].socket, &outbuf, 64);
+                                            sendByteArray(client[j].socket, outbuf, 64);
                                         }
-                                        outbuf[0]=0x0d; // Chat Message
-                                        outbuf[1]=i; // Player ID
-                                        socket_send(client[j].socket, &outbuf, 2);
+                                        sendByte(client[j].socket, 0x0d); // Chat Message
+                                        sendByte(client[j].socket, i); // Player ID
                                         outbuf[0]='-'; // Indent
                                         outbuf[1]=']';
                                         memcpy(&outbuf[2], &inbuf, 62);
-                                        socket_send(client[j].socket, &outbuf, 64);
+                                        sendByteArray(client[j].socket, outbuf, 64);
                                     }
                                 }
                                 lastmsg=i;
@@ -623,7 +638,7 @@ int main(int argc, char* argv[])
                             default:
                                 printf("Error: Unknown packet type: %x\n", inbuf[0]);
                                 memcpy((char*)&outbuf, "\x0eIncompatible Protocol Version                                   ", 65);
-                                socket_send(client[i].socket, &outbuf, 65);
+                                sendByteArray(client[i].socket, outbuf, 65);
                                 printf("Client %d kicked: Incompatible Protocol Version\n", i);
                                 closesocket(client[i].socket);
                                 memset(&client[i].socket,0,sizeof(client[i].socket));
@@ -686,11 +701,10 @@ exitloop:
                     if (FD_ISSET(client[i].socket, &writeable)){
                         switch (client[i].stage){
                             case 1: // Welcome message
-                                outbuf[0]=0x00;
-                                outbuf[1]=0x07;
-                                socket_send(client[i].socket, &outbuf, 2);
-                                socket_send(client[i].socket, (void*)&welcomebuf, 128);
-                                socket_send(client[i].socket, &client[i].op, 1);
+                                sendByte(client[i].socket, 0x00);
+                                sendByte(client[i].socket, 0x07);
+                                sendByteArray(client[i].socket, welcomebuf, 128);
+                                sendByte(client[i].socket, client[i].op);
                                 printf("Client %d sent welcome message\n", i);
                                 client[i].stage=2;
                             break;
@@ -735,34 +749,26 @@ exitloop:
                                     fseek(fpin, 0L, SEEK_END);
                                     filesize = ftell(fpin); // Get file size
                                     fseek(fpin, 0L, SEEK_SET);
-                                    outbuf[0]=0x02;
-                                    socket_send(client[i].socket, &outbuf, 1);
+                                    sendByte(client[i].socket, 0x02);
                                     k = 0;
                                     j = 0;
                                     while(1){
                                         j=fread(&inbuf,1,1024,fpin);
-                                        outbuf[0]=0x03;
-                                        socket_send(client[i].socket, &outbuf, 1);
-                                        int16buf = htons(j);
-                                        socket_send(client[i].socket, &int16buf, sizeof(int16_t));
+                                        sendByte(client[i].socket, 0x03);
+                                        sendInt16(client[i].socket, j);
                                         memset(&outbuf,0,sizeof(outbuf));
                                         memcpy(&outbuf,&inbuf,j);
                                         k = k + j;
-                                        socket_send(client[i].socket, &outbuf, sizeof(outbuf));
-                                        outbuf[0]=(char)floor((double)k*(100/(double)filesize));
-                                        socket_send(client[i].socket, &outbuf, 1);
+                                        sendByteArray(client[i].socket, outbuf, 1024);
+                                        sendByte(client[i].socket, (int8_t)floor((double)k*(100/(double)filesize)));
                                         printf("%d bytes>",j);
                                         if (feof(fpin)!=0){
                                             printf("TOTAL %d bytes sent.\n",k);
                                             printf("Finalising map data...");
-                                            outbuf[0]=0x04; // Finalise
-                                            socket_send(client[i].socket, &outbuf, 1);
-                                            int16buf = htons(mapx);
-                                            socket_send(client[i].socket, &int16buf, sizeof(int16_t)); // X
-                                            int16buf = htons(mapy);
-                                            socket_send(client[i].socket, &int16buf, sizeof(int16_t)); // Y
-                                            int16buf = htons(mapz);
-                                            socket_send(client[i].socket, &int16buf, sizeof(int16_t)); // Z
+                                            sendByte(client[i].socket, 0x04); // Finalise
+                                            sendInt16(client[i].socket, mapx); // X
+                                            sendInt16(client[i].socket, mapy); // Y
+                                            sendInt16(client[i].socket, mapz); // Z
                                             printf("done.\n");
                                             break;
                                         }
@@ -779,68 +785,51 @@ exitloop:
                                 for(j = 0;j < maxclients;j++){
                                     if (client[j].used==1){
                                         if (j!=i){
-                                            outbuf[0]=0x07; // Spawn Player
-                                            outbuf[1]=j; // Player ID
-                                            socket_send(client[i].socket, &outbuf, 2);
-                                            socket_send(client[i].socket, &client[j].name, 64); // Send Name
-                                            int16buf = htons(client[j].x); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send X
-                                            int16buf = htons(client[j].y); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Y
-                                            int16buf = htons(client[j].z); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Z
-                                            socket_send(client[i].socket, &client[j].heading, sizeof(int8_t)); // Send Heading
-                                            socket_send(client[i].socket, &client[j].pitch, sizeof(int8_t)); // Send Pitch
+                                            sendByte(client[i].socket, 0x07); // Spawn Player
+                                            sendByte(client[i].socket, j); // Player ID
+                                            sendByteArray(client[i].socket, client[j].name, 64); // Send Name
+                                            sendInt16(client[i].socket, client[j].x); // Send X
+                                            sendInt16(client[i].socket, client[j].y); // Send Y
+                                            sendInt16(client[i].socket, client[j].\); // Send Z
+                                            sendByte(client[i].socket, client[j].heading); // Send Heading
+                                            sendByte(client[i].socket, client[j].pitch); // Send Pitch
                                         }
                                         if (flippy==1){
                                             // Flippy
-                                            outbuf[0]=0x07; // Spawn Player
-                                            outbuf[1]=64+j; // Player ID
-                                            socket_send(client[i].socket, &outbuf, 2);
+                                            sendByte(client[i].socket, 0x07); // Spawn Player
+                                            sendByte(client[i].socket, 64+j); // Player ID
                                             memcpy(&outbuf, &client[j].name, 64);
                                             outbuf[0]='f';
-                                            socket_send(client[i].socket, &outbuf, 64); // Send fName
-                                            int16buf = htons((mapx*32)-client[j].x); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send X
-                                            int16buf = htons(client[j].y); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Y
-                                            int16buf = htons((mapz*32)-client[j].z); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Z
-                                            outbuf[0] = client[j].heading+127;
-                                            socket_send(client[i].socket, &outbuf, sizeof(int8_t)); // Send Heading
-                                            socket_send(client[i].socket, &client[j].pitch, sizeof(int8_t)); // Send Pitch
+                                            sendByteArray(client[i].socket, outbuf, 64); // Send fName
+                                            sendInt16(client[i].socket, (mapx*32)-client[j].x); // Send X
+                                            sendInt16(client[i].socket, client[j].y); // Send Y
+                                            sendInt16(client[i].socket, (mapz*32)-client[j].z); // Send Z
+                                            sendByte(client[i].socket, client[j].heading+127); // Send Heading
+                                            sendByte(client[i].socket, client[j].pitch); // Send Pitch
                                         }
                                     }
                                     if (mob[j].used==1&&mob[j].respawn==0){
-                                        outbuf[0]=0x07; // Spawn Player
-                                        outbuf[1]=j; // Player ID
-                                        socket_send(client[i].socket, &outbuf, 2);
-                                        socket_send(client[i].socket, &mob[j].name, 64); // Send Name
-                                        int16buf = htons(mob[j].x); // Correct Endianness
-                                        socket_send(client[i].socket, &int16buf, sizeof(short)); // Send X
-                                        int16buf = htons(mob[j].y); // Correct Endianness
-                                        socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Y
-                                        int16buf = htons(mob[j].z); // Correct Endianness
-                                        socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Z
-                                        socket_send(client[i].socket, &mob[j].heading, sizeof(int8_t)); // Send Heading
-                                        socket_send(client[i].socket, &mob[j].pitch, sizeof(int8_t)); // Send Pitch
+                                        sendByte(client[i].socket, 0x07); // Spawn Player
+                                        sendByte(client[i].socket, j); // Player ID
+                                        sendByteArray(client[i].socket, mob[j].name, 64); // Send Name
+                                        sendInt16(client[i].socket, mob[j].x); // Send X
+                                        sendInt16(client[i].socket, mob[j].y); // Send Y
+                                        sendInt16(client[i].socket, mob[j].z); // Send Z
+                                        sendByte(client[i].socket, mob[j].heading); // Send Heading
+                                        sendByte(client[i].socket, mob[j].pitch); // Send Pitch
                                     }
                                 }
                                 // Spawn
                                 client[i].x=6*32;
                                 client[i].y=(mapy/2+10)*32;
                                 client[i].z=6*32;
-                                outbuf[0]=0x08; // Teleport
-                                outbuf[1]=0xFF; // Player ID
-                                socket_send(client[i].socket, &outbuf, 2);
-                                int16buf = htons(client[i].x);
-                                socket_send(client[i].socket, &int16buf, 2); // X
-                                int16buf = htons(client[i].y);
-                                socket_send(client[i].socket, &int16buf, 2); // Y
-                                int16buf = htons(client[i].z);
-                                socket_send(client[i].socket, &int16buf, 2); // Z
-                                socket_send(client[i].socket, &client[i].heading, 1); // Heading
-                                socket_send(client[i].socket, &client[i].pitch, 1); // Pitch
+                                sendByte(client[i].socket, 0x08); // Teleport
+                                sendByte(client[i].socket, 0xFF); // Player ID
+                                sendInt16(client[i].socket, client[i].x); // X
+                                sendInt16(client[i].socket, client[i].y); // Y
+                                sendInt16(client[i].socket, client[i].z); // Z
+                                sendByte(client[i].socket, client[i].heading); // Heading
+                                sendByte(client[i].socket, client[i].pitch); // Pitch
                                 printf("done.\n");
                                 client[i].stage=4;
                             break;
@@ -848,46 +837,33 @@ exitloop:
                                 for(j = 0;j < maxclients;j++){ // Send Player Positions
                                     if (client[j].used==1){
                                         if (j!=i){
-                                            outbuf[0]=0x08; // Position and Orientation Update
-                                            outbuf[1]=j; // Player ID
-                                            socket_send(client[i].socket, &outbuf, 2);
-                                            int16buf = htons(client[j].x); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send X
-                                            int16buf = htons(client[j].y); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Y
-                                            int16buf = htons(client[j].z); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Z
-                                            socket_send(client[i].socket, &client[j].heading, sizeof(int8_t)); // Send Heading
-                                            socket_send(client[i].socket, &client[j].pitch, sizeof(int8_t)); // Send Pitch
+                                            sendByte(client[i].socket, 0x08); // Position and Orientation Update
+                                            sendByte(client[i].socket, j); // Player ID
+                                            sendInt16(client[i].socket, client[j].x); // Send X
+                                            sendInt16(client[i].socket, client[j].y); // Send Y
+                                            sendInt16(client[i].socket, client[j].z); // Send Z
+                                            sendByte(client[i].socket, client[j].heading); // Send Heading
+                                            sendByte(client[i].socket, client[j].pitch); // Send Pitch
                                         }
                                         if (flippy==1){
                                             // Flippy
-                                            outbuf[0]=0x08; // Position and Orientation Update
-                                            outbuf[1]=64+j; // Player ID
-                                            socket_send(client[i].socket, &outbuf, 2);
-                                            int16buf = htons((mapx*32)-client[j].x); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send X
-                                            int16buf = htons(client[j].y); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Y
-                                            int16buf = htons((mapz*32)-client[j].z); // Correct Endianness
-                                            socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Z
-                                            outbuf[0] = client[j].heading+127;
-                                            socket_send(client[i].socket, &outbuf, sizeof(int8_t)); // Send Heading
-                                            socket_send(client[i].socket, &client[j].pitch, sizeof(int8_t)); // Send Pitch
+                                            sendByte(client[i].socket, 0x08); // Position and Orientation Update
+                                            sendByte(client[i].socket, 64+j); // Player ID
+                                            sendInt16(client[i].socket, (mapx*32)-client[j].x); // Send X
+                                            sendInt16(client[i].socket, client[j].y); // Send Y
+                                            sendInt16(client[i].socket, (mapz*32)-client[j].z); // Send Z
+                                            sendByte(client[i].socket, client[j].heading+127);
+                                            sendByte(client[i].socket, client[j].pitch); // Send Pitch
                                         }
                                     }
                                     if (mob[j].used==1&&mob[j].respawn==0){
-                                        outbuf[0]=0x08; // Position and Orientation Update
-                                        outbuf[1]=j; // Player ID
-                                        socket_send(client[i].socket, &outbuf, 2);
-                                        int16buf = htons(mob[j].x); // Correct Endianness
-                                        socket_send(client[i].socket, &int16buf, sizeof(short)); // Send X
-                                        int16buf = htons(mob[j].y); // Correct Endianness
-                                        socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Y
-                                        int16buf = htons(mob[j].z); // Correct Endianness
-                                        socket_send(client[i].socket, &int16buf, sizeof(short)); // Send Z
-                                        socket_send(client[i].socket, &mob[j].heading, sizeof(int8_t)); // Send Heading
-                                        socket_send(client[i].socket, &mob[j].pitch, sizeof(int8_t)); // Send Pitch
+                                        sendByte(client[i].socket, 0x08); // Position and Orientation Update
+                                        sendByte(client[i].socket, j); // Player ID
+                                        sendInt16(client[i].socket, mob[j].x); // Send X
+                                        sendInt16(client[i].socket, mob[j].y); // Send Y
+                                        sendInt16(client[i].socket, mob[j].z); // Send Z
+                                        sendByte(client[i].socket, mob[j].heading); // Send Heading
+                                        sendByte(client[i].socket, mob[j].pitch); // Send Pitch
                                     }
                                 }
                             break;
@@ -975,12 +951,11 @@ exitloop:
                                     }
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
                                         if (client[k].used==1&&client[k].stage==4){
-                                            outbuf[0]=0x0d; // Chat Message
-                                            outbuf[1]=0; // Player ID
-                                            socket_send(client[k].socket, &outbuf, 2);
+                                            sendByte(client[k].socket, 0x0d); // Chat Message
+                                            sendByte(client[k].socket, 0); // Player ID
                                             strcpy(outbuf, "&7Zombie   &cHIT                                                  ");
                                             outbuf[9]=0x30+j;
-                                            socket_send(client[k].socket, &outbuf, 64);
+                                            sendByteArray(client[k].socket, outbuf, 64);
                                         }
                                     }
                                 }
@@ -997,15 +972,13 @@ exitloop:
                                     mob[j].respawn = 1; // Set timer to 1, respawn
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
                                         if (client[k].used==1&&client[k].stage==4){
-                                            outbuf[0]=0x0d; // Chat Message
-                                            outbuf[1]=0; // Player ID
-                                            socket_send(client[k].socket, &outbuf, 2);
+                                            sendByte(client[k].socket, 0x0d); // Chat Message
+                                            sendByte(client[k].socket, 0); // Player ID
                                             strcpy(outbuf, "&7Zombie   &4DIED                                                 ");
                                             outbuf[9]=0x30+j;
-                                            socket_send(client[k].socket, &outbuf, 64);
-                                            outbuf[0]=0x0c; // Despawn
-                                            outbuf[1]=j; // Mob ID
-                                            socket_send(client[k].socket, &outbuf, 2);
+                                            sendByteArray(client[k].socket, outbuf, 64);
+                                            sendByte(client[k].socket, 0x0c); // Despawn
+                                            sendByte(client[k].socket, j); // Mob ID
                                         }
                                     }
                                 }
@@ -1014,24 +987,19 @@ exitloop:
                                 if (mob[j].respawn==0){
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
                                         if (client[k].used==1&&client[k].stage==4){
-                                            outbuf[0]=0x0d; // Chat Message
-                                            outbuf[1]=0; // Player ID
-                                            socket_send(client[k].socket, &outbuf, 2);
+                                            sendByte(client[k].socket, 0x0d); // Chat Message
+                                            sendByte(client[k].socket, 0); // Player ID
                                             strcpy(outbuf, "&7Zombie   &aRESPAWNED                                            ");
                                             outbuf[9]=0x30+j;
-                                            socket_send(client[k].socket, &outbuf, 64);
-                                            outbuf[0]=0x07; // Player Spawn
-                                            outbuf[1]=j; // Mob ID
-                                            socket_send(client[k].socket, &outbuf, 2);
-                                            socket_send(client[k].socket, &mob[j].name, 64); // Name
-                                            int16buf=htons(mob[j].x); // Correct Endianness
-                                            socket_send(client[k].socket, &int16buf, sizeof(short)); // X
-                                            int16buf=htons(mob[j].y); // Correct Endianness
-                                            socket_send(client[k].socket, &int16buf, sizeof(short)); // Y
-                                            int16buf=htons(mob[j].x); // Correct Endianness
-                                            socket_send(client[k].socket, &int16buf, sizeof(short)); // Z
-                                            socket_send(client[k].socket, &mob[j].heading, sizeof(char)); // Heading
-                                            socket_send(client[k].socket, &mob[j].pitch, sizeof(char)); // Pitch
+                                            sendByteArray(client[k].socket, outbuf, 64);
+                                            sendByte(client[k].socket, 0x07); // Player Spawn
+                                            sendByte(client[k].socket, j); // Mob ID
+                                            sendByteArray(client[k].socket, mob[j].name, 64); // Name
+                                            sendInt16(client[k].socket, mob[j].x); // X
+                                            sendInt16(client[k].socket, mob[j].y); // Y
+                                            sendInt16(client[k].socket, mob[j].z); // Z
+                                            sendByte(client[k].socket, mob[j].heading); // Heading
+                                            sendByte(client[k].socket, mob[j].pitch); // Pitch
                                         }
                                     }
                                 }
