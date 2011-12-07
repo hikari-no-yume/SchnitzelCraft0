@@ -463,7 +463,8 @@ int main(int argc, char* argv[])
                     // *** RECV BEGIN ***
                     //if (FD_ISSET(client[i].socket, &readable)){
                     while(FD_ISSET(client[i].socket, &readable)){
-                        switch (recvByte(client[i].socket)){
+                        inbuf[0] = recvByte(client[i].socket);
+                        switch (inbuf[0]){
                             case 0x00:
                                 if (client[i].stage==0){
                                     client[i].protocol = recvByte(client[i].socket);
