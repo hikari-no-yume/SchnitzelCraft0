@@ -65,7 +65,7 @@ struct CLIENT {
                        // 3 - Map sent
                        // 4 - Other players spawned, ready
         char name[65];
-        char protocol[1];
+        char protocol;
         // Position
         short x;
         short y;
@@ -467,7 +467,7 @@ int main(int argc, char* argv[])
                             case 0x00:
                                 if (client[i].stage==0){
                                     client[i].protocol = recvByte(client[i].socket);
-                                    if (client[i].protocol[0] == 0x07){ // 7
+                                    if (client[i].protocol == 0x07){ // 7
                                         recvByteArray(client[i].socket, client[i].name, 64); // Get Name
                                         client[i].name[64]='\0'; // Null terminate
                                         printf("Client %d identified: ", i);
@@ -508,7 +508,7 @@ int main(int argc, char* argv[])
                                         memcpy((char*)&outbuf, "\x0eIncompatible Protocol Version                                   ", 65);
                                         sendByteArray(client[i].socket, outbuf, 65);
                                         printf("Client %d kicked: Incompatible Protocol Version ", i);
-                                        printf("(%d)\n", client[i].protocol[0]);
+                                        printf("(%d)\n", client[i].protocol);
                                         closesocket(client[i].socket);
                                         client[i].used=0;
                                         goto exitloop;
