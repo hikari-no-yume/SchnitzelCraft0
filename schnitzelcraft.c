@@ -30,6 +30,8 @@ typedef signed int int32_t;
 //#define numzombies 0
 #define maxclients 64 // Player ID cannot be >127 (< 0 signed) as this means "teleport"
 
+#define blockAt(x, y, z) ( (x>=0 && y>=0 && z>=0 && x<mapx && y<mapy && z<mapz) ? (block + y*mapx*mapz + z*mapz + x) : (block) )
+
 FILE *fplog;
 char *block;
 int16_t mapx=256, mapy=128, mapz=256;
@@ -195,16 +197,6 @@ void backupmap(){
     if (fp!=NULL){
 		fwrite(&backupinc, sizeof(backupinc), 1, fp);
 		fclose(fp);
-	}
-}
-char* blockAt(short x, short y, short z){
-	if (x<mapx&&y<mapy&&z<mapz){
-	return block // y/z/x wtf
-				+ y*mapx*mapz
-				+ z*mapz
-				+ x;
-	}else{
-		return block;
 	}
 }
 char* setBlock(short x, short y, short z, char type){
