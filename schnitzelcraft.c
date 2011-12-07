@@ -285,6 +285,33 @@ void generateMap(int type) {
             }
             break;
     }
+	for (i=1;i<(mapy/2)+4;i++){ // Builds route to surface
+		blockp=blockAt(0,i,0);
+		*blockp=0x07; // Bedrock (indestructible)
+		blockp=blockAt(1,i,0);
+		*blockp=0x07; // Bedrock (indestructible)
+		blockp=blockAt(0,i,1);
+		*blockp=0x07; // Bedrock (indestructible)
+		blockp=blockAt(1,i,1);
+		*blockp=0x09; // Stationary Water (indestructible)
+		blockp=blockAt(2,i,2);
+		*blockp=0x07; // Bedrock (indestructible)
+		if (i>3){
+			blockp=blockAt(2,i,1);
+			*blockp=0x07; // Bedrock (indestructible)
+			blockp=blockAt(1,i,2);
+			*blockp=0x07; // Bedrock (indestructible)
+		}else{
+			blockp=blockAt(2,i,1);
+			*blockp=0x09; // Stationary Water (indestructible)
+			blockp=blockAt(1,i,2);
+			*blockp=0x09; // Stationary Water (indestructible)
+		}
+		blockp=blockAt(2,i,0);
+		*blockp=0x07; // Bedrock (indestructible)
+		blockp=blockAt(0,i,2);
+		*blockp=0x07; // Bedrock (indestructible)
+	}
 }
 
 int main(int argc, char* argv[])
@@ -326,33 +353,6 @@ int main(int argc, char* argv[])
 	}else{ // Else create anew
 		printf("Preparing map...");
         generateMap(0);
-	}
-	for (i=1;i<(mapy/2)+4;i++){ // Builds route to surface
-		blockp=blockAt(0,i,0);
-		*blockp=0x07; // Bedrock (indestructible)
-		blockp=blockAt(1,i,0);
-		*blockp=0x07; // Bedrock (indestructible)
-		blockp=blockAt(0,i,1);
-		*blockp=0x07; // Bedrock (indestructible)
-		blockp=blockAt(1,i,1);
-		*blockp=0x09; // Stationary Water (indestructible)
-		blockp=blockAt(2,i,2);
-		*blockp=0x07; // Bedrock (indestructible)
-		if (i>3){
-			blockp=blockAt(2,i,1);
-			*blockp=0x07; // Bedrock (indestructible)
-			blockp=blockAt(1,i,2);
-			*blockp=0x07; // Bedrock (indestructible)
-		}else{
-			blockp=blockAt(2,i,1);
-			*blockp=0x09; // Stationary Water (indestructible)
-			blockp=blockAt(1,i,2);
-			*blockp=0x09; // Stationary Water (indestructible)
-		}
-		blockp=blockAt(2,i,0);
-		*blockp=0x07; // Bedrock (indestructible)
-		blockp=blockAt(0,i,2);
-		*blockp=0x07; // Bedrock (indestructible)
 	}
 	printf("/\n");
 
