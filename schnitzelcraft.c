@@ -667,7 +667,7 @@ exitloop:
                                         }
                                     }
                                 }
-                            }else *//*if (getBlock(j,physy,k)==0x02&&getBlock(j,physy+1,k)!=0x00){ // If Grass and Vertical is not free
+                            }else if (getBlock(j,physy,k)==0x02&&getBlock(j,physy+1,k)!=0x00){ // If Grass and Vertical is not free
                                 setBlock(j,physy,k,0x03); // Set to Dirt
                                 outbuf[1] = 0x03; // Dirt
                                 for (l=0;l<maxclients;l++){ // Yay moar dirty hax
@@ -701,7 +701,7 @@ exitloop:
                                         }
                                     }
                                 }
-                            }*/
+                            }
                         }
                     }
                     #endif
