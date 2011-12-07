@@ -769,7 +769,7 @@ exitloop:
                                             sendByteArray(client[i].socket, client[j].name, 64); // Send Name
                                             sendInt16(client[i].socket, client[j].x); // Send X
                                             sendInt16(client[i].socket, client[j].y); // Send Y
-                                            sendInt16(client[i].socket, client[j].\); // Send Z
+                                            sendInt16(client[i].socket, client[j].z); // Send Z
                                             sendByte(client[i].socket, client[j].heading); // Send Heading
                                             sendByte(client[i].socket, client[j].pitch); // Send Pitch
                                         }
