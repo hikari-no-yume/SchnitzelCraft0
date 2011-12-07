@@ -74,7 +74,6 @@ struct CLIENT {
         char pitch;
 } CLIENT;
 
-FILE *fplog;
 char *block;
 int16_t mapx=256, mapy=128, mapz=256;
 int32_t mapsize = 0; // 256x128x256
@@ -160,14 +159,6 @@ double noise(double x,double y)
  int1=interpolate1(s,t,x-floorx);//Interpolate between the values.
  int2=interpolate1(u,v,x-floorx);//Here we use x-floorx, to get 1st dimension. Don't mind the x-floorx thingie, it's part of the cosine formula.
  return interpolate1(int1,int2,y-floory);//Here we use y-floory, to get the 2nd dimension.
-}
-
-size_t socket_send(SOCKET s, void *buf, int len){
-    fwrite((char*)buf, len, 1, fplog); // Log
-    return send(s, (char*)buf, len, 0); // Send
-}
-int socket_recv(SOCKET s, void *buf, int len){
-    return recv(s, (char*)buf, len, 0); // Recieve
 }
 
 size_t sendByte(SOCKET socket, char value) {
@@ -361,9 +352,6 @@ int main(int argc, char* argv[])
     WSADATA wsaData;
     SOCKET server, tempclient;
     FILE *fp;
-
-    //fopen_s(&fplog, "dump.txt", "wb");
-    fplog = fopen("dump.txt", "wb");
 
     mapsize = mapx*mapy*mapz;
     block = (char*)malloc(mapsize*sizeof(char)); // Allocate
@@ -1016,7 +1004,6 @@ exitloop:
     }
 
     // Cleanup
-    fclose(fplog);
     WSACleanup();
     closesocket(server);
     return 0;
