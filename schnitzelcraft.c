@@ -234,7 +234,7 @@ char touchinglr(short x, short y, short z, char type){
 	num = num + touchingdg(x-3,y,z-3,type);num = num + touchingdg(x-3,y,z,type);num = num + touchingdg(x-3,y,z+3,type);
 	return num; return 0;
 }
-int _tmain(int argc, _TCHAR* argv[])
+int main(int argc, char* argv[])
 {
 	// Vars
 	const unsigned int DEFAULT_PORT = 25565;
