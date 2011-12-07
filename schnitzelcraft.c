@@ -214,25 +214,25 @@ char getBlock(short x, short y, short z){
 	return *p;
 }
 char touching(short x, short y, short z, char type){
-	/*char num = 0;
+	char num = 0;
 	                                   if (getBlock(x-1,y,z)==type) num++;
 	if (getBlock(x,y,z-1)==type) num++;									  if (getBlock(x,y,z+1)==type) num++;
 	                                   if (getBlock(x+1,y,z)==type) num++;
-	return num;*/ return 0;
+	return num; return 0;
 }
 char touchingdg(short x, short y, short z, char type){
-	/*char num = 0;
+	char num = 0;
 	if (getBlock(x-1,y,z-1)==type) num++;if (getBlock(x-1,y,z)==type) num++;if (getBlock(x-1,y,z+1)==type) num++;
 	if (getBlock(x,y,z-1)==type) num++;										if (getBlock(x,y,z+1)==type) num++;
 	if (getBlock(x+1,y,z-1)==type) num++;if (getBlock(x+1,y,z)==type) num++;if (getBlock(x+1,y,z+1)==type) num++;
-	return num;*/ return 0;
+	return num; return 0;
 }
 char touchinglr(short x, short y, short z, char type){
-	/*char num = 0;
+	char num = 0;
 	num = num + touchingdg(x+3,y,z-3,type);num = num + touchingdg(x+3,y,z,type);num = num + touchingdg(x+3,y,z+3,type);
 	num = num + touchingdg(x  ,y,z-3,type);num = num + touchingdg(x  ,y,z,type);num = num + touchingdg(x  ,y,z+3,type);
 	num = num + touchingdg(x-3,y,z-3,type);num = num + touchingdg(x-3,y,z,type);num = num + touchingdg(x-3,y,z+3,type);
-	return num;*/ return 0;
+	return num; return 0;
 }
 int _tmain(int argc, _TCHAR* argv[])
 {
