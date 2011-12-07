@@ -234,6 +234,59 @@ char touchinglr(short x, short y, short z, char type){
 	num = num + touchingdg(x-3,y,z-3,type);num = num + touchingdg(x-3,y,z,type);num = num + touchingdg(x-3,y,z+3,type);
 	return num; return 0;
 }
+
+void generateMap(int type) {
+    int i, j, k;
+    char *blockp;
+    
+    switch (type) {
+        case 0: // Half flatgrass, half sand
+            for (i=0;i<mapx;i++){
+                for (j=0;j<mapz;j++){
+                    blockp=blockAt(i,0,j);
+                    *blockp=0x0C; // Sand
+                    blockp=blockAt(i,mapy/2-3,j);
+                    if (j!=0&&i!=0){
+                        *blockp=0x07; // Bedrock (indestructible)
+                    }else{
+                        *blockp=0x09; // Stationary Water (indestructible)
+                    }
+                    blockp=blockAt(i,mapy/2-2,j);
+                    *blockp=0x08; // Liquid Water
+                    blockp=blockAt(i,mapy/2-1,j);
+                    *blockp=0x08; // Liquid Water
+                    blockp=blockAt(i,mapy/2,j);
+                    *blockp=0x03; // Dirt
+                    blockp=blockAt(i,mapy/2+1,j);
+                    *blockp=0x03; // Dirt
+                    blockp=blockAt(i,mapy/2+2,j);
+                    *blockp=0x02; // Grass
+                }
+            }
+            break;
+        case 1: // Noise
+            for (i=0;i<mapx;i++){
+                for (j=0;j<mapz;j++){
+                    int height;
+                    height = (int)((noise(i*0.025f,j*0.025f)+1.0f)*(mapy/8))+mapy/4;
+                    for (k = 0;k<height;k++){
+                        blockp=blockAt(i,k,j);
+                        if (height>(mapy/4)+(mapy/6)){
+                            *blockp=0x01; // Stone
+                        }else{
+                            if (k!=height-1){
+                                *blockp=0x03; // Dirt
+                            }else{
+                                *blockp=0x02; // Grass
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+    }
+}
+
 int main(int argc, char* argv[])
 {
 	// Vars
@@ -272,42 +325,7 @@ int main(int argc, char* argv[])
 		fclose(fp);
 	}else{ // Else create anew
 		printf("Preparing map...");
-		for (i=0;i<mapx;i++){
-			for (j=0;j<mapz;j++){
-				/*blockp=blockAt(i,0,j);
-				*blockp=0x0C; // Sand
-				blockp=blockAt(i,mapy/2-3,j);
-				if (j!=0&&i!=0){
-					*blockp=0x07; // Bedrock (indestructible)
-				}else{
-					*blockp=0x09; // Stationary Water (indestructible)
-				}
-				blockp=blockAt(i,mapy/2-2,j);
-				*blockp=0x08; // Liquid Water
-				blockp=blockAt(i,mapy/2-1,j);
-				*blockp=0x08; // Liquid Water
-				blockp=blockAt(i,mapy/2,j);
-				*blockp=0x03; // Dirt
-				blockp=blockAt(i,mapy/2+1,j);
-				*blockp=0x03; // Dirt
-				blockp=blockAt(i,mapy/2+2,j);
-				*blockp=0x02; // Grass*/
-				int height;
-				height = (int)((noise(i*0.025f,j*0.025f)+1.0f)*(mapy/8))+mapy/4;
-				for (k = 0;k<height;k++){
-					blockp=blockAt(i,k,j);
-					if (height>(mapy/4)+(mapy/6)){
-						*blockp=0x01; // Stone
-					}else{
-						if (k!=height-1){
-							*blockp=0x03; // Dirt
-						}else{
-							*blockp=0x02; // Grass
-						}
-					}
-				}
-			}
-		}
+        generateMap(0);
 	}
 	for (i=1;i<(mapy/2)+4;i++){ // Builds route to surface
 		blockp=blockAt(0,i,0);
