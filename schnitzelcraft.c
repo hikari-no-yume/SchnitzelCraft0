@@ -25,6 +25,9 @@ typedef signed int int32_t;
 //#define CHUNK 16384
 #define CHUNK 1024
 
+// Uncomment to enable physics
+//#define PHYSICS
+
 #define flippy 0 // Cos nopflip
 #define numzombies 16 // Cos the more the deadlier etc
 //#define numzombies 0
@@ -628,10 +631,10 @@ int _tmain(int argc, _TCHAR* argv[])
 					}
 exitloop:
 					// *** RECV END ***
-					// *** PHYSICS BEGIN ***
+					#ifdef PHYSICS
 					for (j=physx-8;j<physx+8;j++){
 						for (k=physz-8;k<physz+8;k++){
-							/*if (getBlock(j,physy,k)==0x08&&touchinglr(j, physy, k, 0x13)>0){ // If Liquid Water and Touching Sponge (at long distance)
+							if (getBlock(j,physy,k)==0x08&&touchinglr(j, physy, k, 0x13)>0){ // If Liquid Water and Touching Sponge (at long distance)
 								setBlock(j,physy,k,0x00); // Set to Air
 								outbuf[1] = 0x00;
 								for (l=0;l<maxclients;l++){ // Yay moar dirty hax
@@ -702,7 +705,7 @@ exitloop:
 							}*/
 						}
 					}
-					// *** PHYSICS END ***
+					#endif
 					memset(&inbuf,0,sizeof(inbuf));
 					memset(&outbuf,0,sizeof(outbuf));
 					FD_ZERO(&writeable);
