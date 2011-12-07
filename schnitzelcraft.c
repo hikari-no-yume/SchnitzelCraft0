@@ -197,9 +197,6 @@ int32_t recvInt32(SOCKET socket) {
 }
 
 void sendPacket_setBlock(SOCKET socket, short x, short y, short z, char type){
-    uint8_t bytebuf;
-    int16_t int16buf;
-    
     sendByte(socket, 0x06); // Set Block
     sendInt16(socket, x); // X
     sendInt16(socket, y); // Y
@@ -342,9 +339,8 @@ int main(int argc, char* argv[])
     // Vars
     const unsigned int DEFAULT_PORT = 25565;
     const char welcomebuf[] = "AJF's Minecraft Server powered by SchnitzelCraft                gg2 is awesome etc...                                           ";
-    int32_t j = 0, i = 0, k = 0, l = 0, m = 0, physx, physy, physz, lastmsg = 65, thisclient = 0, sal = 0;
-    int32_t filesize = 0, int32buf = 0, iMode = 1;
-    int16_t int16buf;
+    int j = 0, i = 0, k = 0, l = 0, m = 0, physx, physy, physz, lastmsg = 65, thisclient = 0, sal = 0, filesize = 0, iMode = 1;
+    int32_t int32buf = 0;
     char outbuf[1024], inbuf[1024];
     struct sockaddr_in sa;
     struct fd_set readable, writeable;
