@@ -33,7 +33,7 @@ typedef signed int int32_t;
 //#define numzombies 0
 #define maxclients 64 // Player ID cannot be >127 (< 0 signed) as this means "teleport"
 
-#define blockAt(x, y, z) ( (x>=0 && y>=0 && z>=0 && x<mapx && y<mapy && z<mapz) ? (block + y*mapx*mapz + z*mapz + x) : (block) )
+#define blockAt(x, y, z) ( ((x)>=0 && (y)>=0 && (z)>=0 && (x)<mapx && (y)<mapy && (z)<mapz) ? (block + (y)*mapx*mapz + (z)*mapz + (x)) : (block) )
 
 FILE *fplog;
 char *block;
