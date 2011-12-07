@@ -614,15 +614,6 @@ int main(int argc, char* argv[])
                                 }
                                 lastmsg=i;
                             break;
-                            /*case 0xff: // EOF: Client left
-                                memcpy((char*)&outbuf, "\x0eIncompatible Protocol Version                                   ", 65);
-                                socket_send(client[i].socket, &outbuf, 65);
-                                printf("Client %d kicked: Incompatible Protocol Version ", i);
-                                printf("(%d)\n", client[i].protocol[0]);
-                                closesocket(client[i].socket);
-                                client[i].used=0;
-                                goto exitloop;
-                            break;*/
                             default:
                                 printf("Error: Unknown packet type: %x\n", inbuf[0]);
                                 memcpy((char*)&outbuf, "\x0eIncompatible Protocol Version                                   ", 65);
