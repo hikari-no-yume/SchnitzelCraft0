@@ -35,11 +35,6 @@ typedef signed int int32_t;
 
 #define blockAt(x, y, z) ( ((x)>=0 && (y)>=0 && (z)>=0 && (x)<mapx && (y)<mapy && (z)<mapz) ? (block + (y)*mapx*mapz + (z)*mapz + (x)) : (block) )
 
-FILE *fplog;
-char *block;
-int16_t mapx=256, mapy=128, mapz=256;
-int32_t mapsize = 0; // 256x128x256
-
 struct BLOCKCHANGE {
         char player;
         short x;
@@ -78,6 +73,15 @@ struct CLIENT {
         char heading;
         char pitch;
 } CLIENT;
+
+FILE *fplog;
+char *block;
+int16_t mapx=256, mapy=128, mapz=256;
+int32_t mapsize = 0; // 256x128x256
+struct CLIENT client[maxclients];
+int clients;
+struct MOB mob[maxclients];
+
 int def(FILE *source, FILE *dest, int level)
 {
     int ret, flush;
@@ -299,13 +303,10 @@ int main(int argc, char* argv[])
     // Vars
     const unsigned int DEFAULT_PORT = 25565;
     const char welcomebuf[] = "AJF's Minecraft Server powered by SchnitzelCraft                gg2 is awesome etc...                                           ";
-    int32_t j = 0, i = 0, k = 0, l = 0, m = 0, physx, physy, physz, clients = 0, lastmsg = 65, length = 0, thisclient = 0, sal = 0, debugging = 1;
+    int32_t j = 0, i = 0, k = 0, l = 0, m = 0, physx, physy, physz, lastmsg = 65, thisclient = 0, sal = 0;
     int32_t filesize = 0, int32buf = 0, iMode = 1;
     int16_t int16buf;
     char outbuf[1024], inbuf[1024];
-    char *blockp;
-    struct CLIENT client[maxclients];
-    struct MOB mob[maxclients];
     struct sockaddr_in sa;
     struct fd_set readable, writeable;
     struct timeval timeout;
