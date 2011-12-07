@@ -204,6 +204,12 @@ void sendPacket_setBlock(SOCKET socket, short x, short y, short z, char type){
     sendByte(socket, type); // Block Type
 }
 
+void sendPacket_chatMessage(SOCKET socket, char id, char *message){
+    sendByte(socket, 0x0d); // Chat Message
+    sendByte(socket, id); // Player ID
+    sendByteArray(socket, message, 64); // Message Body
+}
+
 
 void backupmap(){
     int32_t header;
@@ -486,8 +492,6 @@ int main(int argc, char* argv[])
                                                     sendInt16(client[j].socket, client[i].z); // Z
                                                     sendByte(client[j].socket, client[i].heading); // Heading
                                                     sendByte(client[j].socket, client[i].pitch); // Pitch
-                                                    sendByte(client[j].socket, 0x0d); // Chat Message
-                                                    sendByte(client[j].socket, i); // Player ID
                                                     outbuf[0]='&';
                                                     outbuf[1]='e'; // Green
                                                     outbuf[2]='J';
@@ -496,7 +500,7 @@ int main(int argc, char* argv[])
                                                     outbuf[5]='N';
                                                     outbuf[6]=' ';
                                                     memcpy(&outbuf[7], &client[i].name, 57);
-                                                    sendByteArray(client[j].socket, outbuf, 64);
+                                                    sendPacket_chatMessage(client[j].socket, i, outbuf);
                                                 }
                                             }
                                         }
@@ -521,8 +525,6 @@ int main(int argc, char* argv[])
                                                 sendByte(client[j].socket, 0x0c);  // Despawn Flippy
                                                 sendByte(client[j].socket, 64+i);
                                             }
-                                            sendByte(client[j].socket, 0x0d); // Chat Message
-                                            sendByte(client[j].socket, i); // Player ID
                                             outbuf[0]='&'; // Yellow
                                             outbuf[1]='c';
                                             outbuf[2]='P';
@@ -531,7 +533,7 @@ int main(int argc, char* argv[])
                                             outbuf[5]='T';
                                             outbuf[6]=' ';
                                             memcpy(&outbuf[7], &client[i].name, 57);
-                                            sendByteArray(client[j].socket, outbuf, 64);
+                                            sendPacket_chatMessage(client[j].socket, i, outbuf);
                                         }
                                     }
                                     backupmap(); // Save map backup
@@ -593,19 +595,15 @@ int main(int argc, char* argv[])
                                 for (j=0;j<maxclients;j++){ // Yay dirty hax
                                     if (client[j].used==1&&client[j].stage==4){
                                         if (lastmsg!=i){
-                                            sendByte(client[j].socket, 0x0d); // Chat Message
-                                            sendByte(client[j].socket, i); // Player ID
                                             outbuf[0]='&'; // Yellow
                                             outbuf[1]='e';
                                             memcpy(&outbuf[2], &client[i].name, 62);
-                                            sendByteArray(client[j].socket, outbuf, 64);
+                                            sendPacket_chatMessage(client[j].socket, i, outbuf);
                                         }
-                                        sendByte(client[j].socket, 0x0d); // Chat Message
-                                        sendByte(client[j].socket, i); // Player ID
                                         outbuf[0]='-'; // Indent
                                         outbuf[1]=']';
                                         memcpy(&outbuf[2], &inbuf, 62);
-                                        sendByteArray(client[j].socket, outbuf, 64);
+                                        sendPacket_chatMessage(client[j].socket, i, outbuf);
                                     }
                                 }
                                 lastmsg=i;
@@ -926,11 +924,9 @@ exitloop:
                                     }
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
                                         if (client[k].used==1&&client[k].stage==4){
-                                            sendByte(client[k].socket, 0x0d); // Chat Message
-                                            sendByte(client[k].socket, 0); // Player ID
                                             strcpy(outbuf, "&7Zombie   &cHIT                                                  ");
                                             outbuf[9]=0x30+j;
-                                            sendByteArray(client[k].socket, outbuf, 64);
+                                            sendPacket_chatMessage(client[k].socket, 0, outbuf);
                                         }
                                     }
                                 }
@@ -947,11 +943,9 @@ exitloop:
                                     mob[j].respawn = 1; // Set timer to 1, respawn
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
                                         if (client[k].used==1&&client[k].stage==4){
-                                            sendByte(client[k].socket, 0x0d); // Chat Message
-                                            sendByte(client[k].socket, 0); // Player ID
                                             strcpy(outbuf, "&7Zombie   &4DIED                                                 ");
                                             outbuf[9]=0x30+j;
-                                            sendByteArray(client[k].socket, outbuf, 64);
+                                            sendPacket_chatMessage(client[k].socket, 0, outbuf);
                                             sendByte(client[k].socket, 0x0c); // Despawn
                                             sendByte(client[k].socket, j); // Mob ID
                                         }
@@ -962,11 +956,9 @@ exitloop:
                                 if (mob[j].respawn==0){
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
                                         if (client[k].used==1&&client[k].stage==4){
-                                            sendByte(client[k].socket, 0x0d); // Chat Message
-                                            sendByte(client[k].socket, 0); // Player ID
                                             strcpy(outbuf, "&7Zombie   &aRESPAWNED                                            ");
                                             outbuf[9]=0x30+j;
-                                            sendByteArray(client[k].socket, outbuf, 64);
+                                            sendPacket_chatMessage(client[k].socket, 0, outbuf);
                                             sendByte(client[k].socket, 0x07); // Player Spawn
                                             sendByte(client[k].socket, j); // Mob ID
                                             sendByteArray(client[k].socket, mob[j].name, 64); // Name
