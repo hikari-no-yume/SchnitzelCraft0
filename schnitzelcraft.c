@@ -369,7 +369,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//ioctlsocket(server,FIONBIO,&iMode);
 
 	if (bind(server, (SOCKADDR*)&sa, sizeof sa)!=SOCKET_ERROR){
-		printf("SchnitzelCraft V0.3 (C) Andrew Faulds 2010 \n");
+		printf("SchnitzelCraft V0.3 (C) Andrew Faulds 2010-2011 \n");
 		printf("This application uses zlib (C) 1995-2010 Jean-loup Gailly and Mark Adler\n");
 		printf("Map size: %d", mapx);
 		printf("x%dx", mapy);
