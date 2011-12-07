@@ -169,6 +169,24 @@ size_t socket_send(SOCKET s, void *buf, int len){
 int socket_recv(SOCKET s, void *buf, int len){
     return recv(s, (char*)buf, len, 0); // Recieve
 }
+
+void sendPacket_setBlock(SOCKET socket, short x, short y, short z, char type){
+    uint8_t bytebuf;
+    int16_t int16buf;
+    
+    bytebuf=0x06; // Set Block
+    socket_send(socket, &bytebuf, 1);
+    int16buf=htons(x);
+    socket_send(socket, &int16buf, sizeof(int16_t)); // X
+    int16buf=htons(y);
+    socket_send(socket, &int16buf, sizeof(int16_t)); // Y
+    int16buf=htons(z);
+    socket_send(socket, &int16buf, sizeof(int16_t)); // Z
+    bytebuf=type;
+    socket_send(socket, &bytebuf, sizeof(uint8_t)); // Block Type
+}
+
+
 void backupmap(){
     uint32_t header;
     FILE* fp;
@@ -535,13 +553,7 @@ int main(int argc, char* argv[])
                                     } // Disabled due to water physics
                                     if (bc.newvalue==0x2C){ // Step
                                         if (getBlock(ntohs(bc.x),ntohs(bc.y)-1,ntohs(bc.z))==0x2C){
-                                            outbuf[0]=0x06; // Set Block
-                                            outbuf[1]=0x00; // Air
-                                            socket_send(client[i].socket, &outbuf, 1);
-                                            socket_send(client[i].socket, &bc.x, sizeof(short)); // X
-                                            socket_send(client[i].socket, &bc.y, sizeof(short)); // Y
-                                            socket_send(client[i].socket, &bc.z, sizeof(short)); // Z
-                                            socket_send(client[i].socket, &outbuf[1], sizeof(char)); // Block Type
+                                            sendPacket_setBlock(client[i].socket, ntohs(bc.x), ntohs(bc.y), ntohs(bc.z), 0x00); // Air
                                             bc.newvalue=0x2B; // Double Step
                                             bc.y = htons(ntohs(bc.y) - 1);
                                         }
@@ -555,12 +567,7 @@ int main(int argc, char* argv[])
                                     setBlock(ntohs(bc.x),ntohs(bc.y),ntohs(bc.z),bc.newvalue);
                                     for (j=0;j<maxclients;j++){ // Yay moar dirty hax
                                         if (client[j].used==1&&client[j].stage==4){
-                                            outbuf[0]=0x06; // Set Block
-                                            socket_send(client[j].socket, &outbuf, 1);
-                                            socket_send(client[j].socket, &bc.x, sizeof(short)); // X
-                                            socket_send(client[j].socket, &bc.y, sizeof(short)); // Y
-                                            socket_send(client[j].socket, &bc.z, sizeof(short)); // Z
-                                            socket_send(client[j].socket, &bc.newvalue, sizeof(char)); // Block Type
+                                            sendPacket_setBlock(client[j].socket, bc.x, bc.y, bc.z, bc.newvalue);
                                         }
                                     }
                                     physx=ntohs(bc.x);
@@ -635,52 +642,25 @@ exitloop:
                         for (k=physz-8;k<physz+8;k++){
                             if (getBlock(j,physy,k)==0x08&&touchinglr(j, physy, k, 0x13)>0){ // If Liquid Water and Touching Sponge (at long distance)
                                 setBlock(j,physy,k,0x00); // Set to Air
-                                outbuf[1] = 0x00;
                                 for (l=0;l<maxclients;l++){ // Yay moar dirty hax
                                     if (client[l].used==1&&client[l].stage==4){
-                                        outbuf[0]=0x06; // Set Block
-                                        socket_send(client[l].socket, &outbuf, 1);
-                                        int16buf = htons(j); // Correct Endianness
-                                        socket_send(client[l].socket, &int16buf, sizeof(short)); // X
-                                        int16buf = htons(physy); // Correct Endianness
-                                        socket_send(client[l].socket, &int16buf, sizeof(short)); // Y
-                                        int16buf = htons(k); // Correct Endianness
-                                        socket_send(client[l].socket, &int16buf, sizeof(short)); // Z
-                                        socket_send(client[l].socket, &outbuf[1], sizeof(char)); // Block Type
+                                        sendPacket_setBlock(client[l].socket, j, physy, k, 0x00);
                                     }
                                 }
                             }else if (getBlock(j,physy,k)==0x00&&(touching(j, physy, k, 0x08)>0||getBlock(j, physy+1, k)==0x08)){ // If Air Touching Water/Water Above
                                 if (touchinglr(j, physy, k, 0x13)==0){ // Not Touching Sponge (at long distance)
                                     setBlock(j,physy,k,0x08); // Set to Liquid Water
-                                    outbuf[1] = 0x08;
                                     for (l=0;l<maxclients;l++){ // Yay moar dirty hax
                                         if (client[l].used==1&&client[l].stage==4){
-                                            outbuf[0]=0x06; // Set Block
-                                            socket_send(client[l].socket, &outbuf, 1);
-                                            int16buf = htons(j); // Correct Endianness
-                                            socket_send(client[l].socket, &int16buf, sizeof(short)); // X
-                                            int16buf = htons(physy); // Correct Endianness
-                                            socket_send(client[l].socket, &int16buf, sizeof(short)); // Y
-                                            int16buf = htons(k); // Correct Endianness
-                                            socket_send(client[l].socket, &int16buf, sizeof(short)); // Z
-                                            socket_send(client[l].socket, &outbuf[1], sizeof(char)); // Block Type
+                                            sendPacket_setBlock(client[l].socket, j, physy, k, 0x08);
                                         }
                                     }
                                 }
                             }else if (getBlock(j,physy,k)==0x02&&getBlock(j,physy+1,k)!=0x00){ // If Grass and Vertical is not free
                                 setBlock(j,physy,k,0x03); // Set to Dirt
-                                outbuf[1] = 0x03; // Dirt
                                 for (l=0;l<maxclients;l++){ // Yay moar dirty hax
                                     if (client[l].used==1&&client[l].stage==4){
-                                        outbuf[0]=0x06; // Set Block
-                                        socket_send(client[l].socket, &outbuf, 1);
-                                        int16buf = htons(j); // Correct Endianness
-                                        socket_send(client[l].socket, &int16buf, sizeof(short)); // X
-                                        int16buf = htons(physy); // Correct Endianness
-                                        socket_send(client[l].socket, &int16buf, sizeof(short)); // Y
-                                        int16buf = htons(k); // Correct Endianness
-                                        socket_send(client[l].socket, &int16buf, sizeof(short)); // Z
-                                        socket_send(client[l].socket, &outbuf[1], sizeof(char)); // Block Type
+                                        sendPacket_setBlock(client[l].socket, j, physy, k, 0x03);
                                     }
                                 }
                             }else if (getBlock(j,physy,k)==0x03&&touching(j,physy, k, 0x02)>0){ // Dirt and Touching Grass
@@ -689,15 +669,7 @@ exitloop:
                                     outbuf[1] = 0x02; // Grass
                                     for (l=0;l<maxclients;l++){ // Yay moar dirty hax
                                         if (client[l].used==1&&client[l].stage==4){
-                                            outbuf[0]=0x06; // Set Block
-                                            socket_send(client[l].socket, &outbuf, 1);
-                                            int16buf = htons(j); // Correct Endianness
-                                            socket_send(client[l].socket, &int16buf, sizeof(short)); // X
-                                            int16buf = htons(physy); // Correct Endianness
-                                            socket_send(client[l].socket, &int16buf, sizeof(short)); // Y
-                                            int16buf = htons(k); // Correct Endianness
-                                            socket_send(client[l].socket, &int16buf, sizeof(short)); // Z
-                                            socket_send(client[l].socket, &outbuf[1], sizeof(char)); // Block Type
+                                            sendPacket_setBlock(client[l].socket, j, physy, k, 0x02);
                                         }
                                     }
                                 }
@@ -998,16 +970,7 @@ exitloop:
                                     setBlock(mob[j].x/32, mob[j].y/32-1, mob[j].z/32, 0x00);
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
                                         if (client[k].used==1&&client[k].stage==4){
-                                            outbuf[0]=0x06; // Set Block
-                                            socket_send(client[k].socket, &outbuf, 1);
-                                            int16buf=htons(mob[j].x/32);
-                                            socket_send(client[k].socket, &int16buf, sizeof(short)); // X
-                                            int16buf=htons(mob[j].y/32-1);
-                                            socket_send(client[k].socket, &int16buf, sizeof(short)); // Y
-                                            int16buf=htons(mob[j].z/32);
-                                            socket_send(client[k].socket, &int16buf, sizeof(short)); // Z
-                                            outbuf[0]=0x00;
-                                            socket_send(client[k].socket, &outbuf[0], sizeof(char)); // Block Type
+                                            sendPacket_setBlock(client[k].socket, mob[j].x/32, mob[j].y/32-1, mob[j].z/32, 0x00);
                                         }
                                     }
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
