@@ -236,6 +236,14 @@ void sendPacket_despawn(SOCKET socket, char id){
     sendByte(socket, id); // Player ID
 }
 
+void sendPacket_welcome(SOCKET socket, char version, char *name, char *motd, char op){
+    sendByte(socket, 0x00); // Welcome
+    sendByte(socket, version); // Protocol Version
+    sendByteArray(socket, name, 64); // Server Name
+    sendByteArray(socket, motd, 64); // MOTD
+    sendByte(socket, op); // OP status
+}
+
 void sendPacket_kick(SOCKET socket, char *message){
     sendByte(socket, 0x0e);
     sendByteArray(socket, message, 64);
@@ -680,10 +688,7 @@ exitloop:
                     if (FD_ISSET(client[i].socket, &writeable)){
                         switch (client[i].stage){
                             case 1: // Welcome message
-                                sendByte(client[i].socket, 0x00);
-                                sendByte(client[i].socket, 0x07);
-                                sendByteArray(client[i].socket, (char*)welcomebuf, 128);
-                                sendByte(client[i].socket, client[i].op);
+                                sendPacket_welcome(client[i].socket, 0x07, (char*)welcomebuf, (char*)(welcomebuf+64), client[i].op);
                                 printf("Client %d sent welcome message\n", i);
                                 client[i].stage=2;
                             break;
