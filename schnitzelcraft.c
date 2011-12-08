@@ -210,6 +210,17 @@ void sendPacket_chatMessage(SOCKET socket, char id, char *message){
     sendByteArray(socket, message, 64); // Message Body
 }
 
+void sendPacket_spawnPlayer(SOCKET socket, char id, char *name, short x, short y, short z, char heading, char pitch){
+    sendByte(socket, 0x07); // Spawn Player
+    sendByte(socket, id); // Player ID
+    sendByteArray(socket, name, 64); // Send Name
+    sendInt16(socket, x); // Send X
+    sendInt16(socket, y); // Send Y
+    sendInt16(socket, z); // Send Z
+    sendByte(socket, heading); // Send Heading
+    sendByte(socket, pitch); // Send Pitch
+}
+
 
 void backupmap(){
     int32_t header;
@@ -479,14 +490,7 @@ int main(int argc, char* argv[])
                                         client[i].stage = 1;
                                         for (j=0;j<maxclients;j++){ // Yay EVEN MOAR dirty hax
                                             if (client[j].used==1&&j!=i&&client[j].stage==4){
-                                                sendByte(client[j].socket, 0x07); // Player Spawn
-                                                sendByte(client[j].socket, i); // Player ID
-                                                sendByteArray(client[j].socket, client[i].name, 64); // Name
-                                                sendInt16(client[j].socket, client[i].x); // X
-                                                sendInt16(client[j].socket, client[i].y); // Y
-                                                sendInt16(client[j].socket, client[i].z); // Z
-                                                sendByte(client[j].socket, client[i].heading); // Heading
-                                                sendByte(client[j].socket, client[i].pitch); // Pitch
+                                                sendPacket_spawnPlayer(client[j].socket, i, client[i].name, client[i].x, client[i].y, client[i].z, client[i].heading, client[i].pitch);
                                                 outbuf[0]='&';
                                                 outbuf[1]='e'; // Green
                                                 outbuf[2]='J';
@@ -754,38 +758,17 @@ exitloop:
                                 for(j = 0;j < maxclients;j++){
                                     if (client[j].used==1){
                                         if (j!=i){
-                                            sendByte(client[i].socket, 0x07); // Spawn Player
-                                            sendByte(client[i].socket, j); // Player ID
-                                            sendByteArray(client[i].socket, client[j].name, 64); // Send Name
-                                            sendInt16(client[i].socket, client[j].x); // Send X
-                                            sendInt16(client[i].socket, client[j].y); // Send Y
-                                            sendInt16(client[i].socket, client[j].z); // Send Z
-                                            sendByte(client[i].socket, client[j].heading); // Send Heading
-                                            sendByte(client[i].socket, client[j].pitch); // Send Pitch
+                                            sendPacket_spawnPlayer(client[i].socket, j, client[j].name, client[j].x, client[j].y, client[j].z, client[j].heading, client[j].pitch);
                                         }
                                         if (flippy==1){
                                             // Flippy
-                                            sendByte(client[i].socket, 0x07); // Spawn Player
-                                            sendByte(client[i].socket, 64+j); // Player ID
                                             memcpy(&outbuf, &client[j].name, 64);
                                             outbuf[0]='f';
-                                            sendByteArray(client[i].socket, outbuf, 64); // Send fName
-                                            sendInt16(client[i].socket, (mapx*32)-client[j].x); // Send X
-                                            sendInt16(client[i].socket, client[j].y); // Send Y
-                                            sendInt16(client[i].socket, (mapz*32)-client[j].z); // Send Z
-                                            sendByte(client[i].socket, client[j].heading+127); // Send Heading
-                                            sendByte(client[i].socket, client[j].pitch); // Send Pitch
+                                            sendPacket_spawnPlayer(client[i].socket, 64+j, outbuf, (mapx*32)-client[j].x, client[j].y, (mapz*32)-client[j].z, client[j].heading+127, client[j].pitch);
                                         }
                                     }
                                     if (mob[j].used==1&&mob[j].respawn==0){
-                                        sendByte(client[i].socket, 0x07); // Spawn Player
-                                        sendByte(client[i].socket, j); // Player ID
-                                        sendByteArray(client[i].socket, mob[j].name, 64); // Send Name
-                                        sendInt16(client[i].socket, mob[j].x); // Send X
-                                        sendInt16(client[i].socket, mob[j].y); // Send Y
-                                        sendInt16(client[i].socket, mob[j].z); // Send Z
-                                        sendByte(client[i].socket, mob[j].heading); // Send Heading
-                                        sendByte(client[i].socket, mob[j].pitch); // Send Pitch
+                                        sendPacket_spawnPlayer(client[i].socket, j, mob[j].name, mob[j].x, mob[j].y, mob[j].z, mob[j].heading, mob[j].pitch);
                                     }
                                 }
                                 // Spawn
@@ -955,14 +938,7 @@ exitloop:
                                             strcpy(outbuf, "&7Zombie   &aRESPAWNED                                            ");
                                             outbuf[9]=0x30+j;
                                             sendPacket_chatMessage(client[k].socket, 0, outbuf);
-                                            sendByte(client[k].socket, 0x07); // Player Spawn
-                                            sendByte(client[k].socket, j); // Mob ID
-                                            sendByteArray(client[k].socket, mob[j].name, 64); // Name
-                                            sendInt16(client[k].socket, mob[j].x); // X
-                                            sendInt16(client[k].socket, mob[j].y); // Y
-                                            sendInt16(client[k].socket, mob[j].z); // Z
-                                            sendByte(client[k].socket, mob[j].heading); // Heading
-                                            sendByte(client[k].socket, mob[j].pitch); // Pitch
+                                            sendPacket_spawnPlayer(client[k].socket, j, mob[j].name, mob[j].x, mob[j].y, mob[j].z, mob[j].heading, mob[j].pitch);
                                         }
                                     }
                                 }
