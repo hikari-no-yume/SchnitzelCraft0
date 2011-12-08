@@ -231,6 +231,11 @@ void sendPacket_positionAndOrientation(SOCKET socket, char id, short x, short y,
     sendByte(socket, pitch); // Send Pitch
 }
 
+void sendPacket_despawn(SOCKET socket, char id){
+    sendByte(socket, 0x0c); // Despawn
+    sendByte(socket, id); // Player ID
+}
+
 void backupmap(){
     int32_t header;
     FILE* fp;
@@ -540,11 +545,9 @@ int main(int argc, char* argv[])
                                     client[i].used=0;
                                     for (j=0;j<maxclients;j++){ // ZOMG MOAR HAX
                                         if (client[j].used==1&&client[j].stage==4){
-                                            sendByte(client[j].socket, 0x0c); // Despawn
-                                            sendByte(client[j].socket, i);
+                                            sendPacket_despawn(client[j].socket, i);
                                             if (flippy==1){
-                                                sendByte(client[j].socket, 0x0c);  // Despawn Flippy
-                                                sendByte(client[j].socket, 64+i);
+                                                sendPacket_despawn(client[j].socket, 64+i); // Despawn Flippy
                                             }
                                             outbuf[0]='&'; // Yellow
                                             outbuf[1]='c';
@@ -893,8 +896,7 @@ exitloop:
                                             strcpy(outbuf, "&7Zombie   &4DIED                                                 ");
                                             outbuf[9]=0x30+j;
                                             sendPacket_chatMessage(client[k].socket, 0, outbuf);
-                                            sendByte(client[k].socket, 0x0c); // Despawn
-                                            sendByte(client[k].socket, j); // Mob ID
+                                            sendPacket_despawn(client[k].socket, j); // Despawn
                                         }
                                     }
                                 }
