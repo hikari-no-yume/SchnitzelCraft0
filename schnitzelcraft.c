@@ -244,6 +244,24 @@ void sendPacket_welcome(SOCKET socket, char version, char *name, char *motd, cha
     sendByte(socket, op); // OP status
 }
 
+void sendPacket_levelInitialize(SOCKET socket){
+    sendByte(socket, 0x02);
+}
+
+void sendPacket_levelChunk(SOCKET socket, short size, char *chunk, char percent){
+    sendByte(socket, 0x03); // Level Chunk
+    sendInt16(socket, size); // Chunk Size
+    sendByteArray(socket, chunk, 1024); // Chunk
+    sendByte(socket, percent);
+}
+
+void sendPacket_levelFinalize(SOCKET socket, short x, short y, short z){
+    sendByte(socket, 0x04); // Finalise
+    sendInt16(socket, x); // X
+    sendInt16(socket, y); // Y
+    sendInt16(socket, z); // Z
+}
+
 void sendPacket_kick(SOCKET socket, char *message){
     sendByte(socket, 0x0e);
     sendByteArray(socket, message, 64);
@@ -726,34 +744,25 @@ exitloop:
                                     printf("Error compressing data: Failed to open file.\n");
                                 }
 
-                                printf("Sending compressed map data...");
+                                printf("Sending compressed map data...\n");
                                 fpin = fopen("map.gz", "rb");
                                 //fopen_s(&fpin, "map.gz", "rb");
                                 if (fpin != NULL){
                                     fseek(fpin, 0L, SEEK_END);
                                     filesize = ftell(fpin); // Get file size
                                     fseek(fpin, 0L, SEEK_SET);
-                                    sendByte(client[i].socket, 0x02);
+                                    sendPacket_levelInitialize(client[i].socket);
                                     k = 0;
                                     j = 0;
                                     while(1){
                                         j=fread(&inbuf,1,1024,fpin);
-                                        sendByte(client[i].socket, 0x03);
-                                        sendInt16(client[i].socket, j);
                                         memset(&outbuf,0,sizeof(outbuf));
                                         memcpy(&outbuf,&inbuf,j);
                                         k = k + j;
-                                        sendByteArray(client[i].socket, outbuf, 1024);
-                                        sendByte(client[i].socket, (int8_t)floor((double)k*(100/(double)filesize)));
-                                        printf("%d bytes>",j);
+                                        sendPacket_levelChunk(client[i].socket, j, outbuf, (char)floor((double)k*(100/(double)filesize)));
                                         if (feof(fpin)!=0){
-                                            printf("TOTAL %d bytes sent.\n",k);
-                                            printf("Finalising map data...");
-                                            sendByte(client[i].socket, 0x04); // Finalise
-                                            sendInt16(client[i].socket, mapx); // X
-                                            sendInt16(client[i].socket, mapy); // Y
-                                            sendInt16(client[i].socket, mapz); // Z
-                                            printf("done.\n");
+                                            sendPacket_levelFinalize(client[i].socket, mapx, mapy, mapz);
+                                            printf("Finalized map data - total %d bytes sent.\n", k);
                                             break;
                                         }
                                     }
