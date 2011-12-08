@@ -345,7 +345,7 @@ int main(int argc, char* argv[])
     // Vars
     const int DEFAULT_PORT = 25565;
     const char welcomebuf[] = "AJF's Minecraft Server powered by SchnitzelCraft                gg2 is awesome etc...                                           ";
-    int j = 0, i = 0, k = 0, l = 0, m = 0, physx, physy, physz, lastmsg = 65, thisclient = 0, sal = 0, filesize = 0, iMode = 1;
+    int j = 0, i = 0, k = 0, l = 0, m = 0, physx = 0, physy = 0, physz = 0, phys = 0, lastmsg = 65, thisclient = 0, sal = 0, filesize = 0, iMode = 1;
     int32_t int32buf = 0;
     char outbuf[1024], inbuf[1024];
     struct sockaddr_in sa;
@@ -414,10 +414,11 @@ int main(int argc, char* argv[])
         printf("Map size: %d", mapx);
         printf("x%dx", mapy);
         printf("%d: ", mapz);
-        printf("%dKB\n", mapsize/1024);
+        printf("%dKB\n", (int)(mapsize/1024));
         printf("Connect to port %d\n", DEFAULT_PORT);
         while (1){
             Sleep(50);
+            phys = 0;
             // *** CONNECT BEGIN ***
             if (listen(server, 64)!=SOCKET_ERROR){
                 FD_ZERO(&readable);
@@ -569,6 +570,7 @@ int main(int argc, char* argv[])
                                             sendPacket_setBlock(client[j].socket, bc.x, bc.y, bc.z, bc.newvalue);
                                         }
                                     }
+                                    phys=1;
                                     physx=bc.x;
                                     physy=bc.y;
                                     physz=bc.z;
@@ -619,6 +621,7 @@ int main(int argc, char* argv[])
 exitloop:
                     // *** RECV END ***
                     #ifdef PHYSICS
+                    if (phys)
                     for (j=physx-8;j<physx+8;j++){
                         for (k=physz-8;k<physz+8;k++){
                             if (getBlock(j,physy,k)==0x08&&touchinglr(j, physy, k, 0x13)>0){ // If Liquid Water and Touching Sponge (at long distance)
@@ -669,7 +672,7 @@ exitloop:
                             case 1: // Welcome message
                                 sendByte(client[i].socket, 0x00);
                                 sendByte(client[i].socket, 0x07);
-                                sendByteArray(client[i].socket, welcomebuf, 128);
+                                sendByteArray(client[i].socket, (char*)welcomebuf, 128);
                                 sendByte(client[i].socket, client[i].op);
                                 printf("Client %d sent welcome message\n", i);
                                 client[i].stage=2;
