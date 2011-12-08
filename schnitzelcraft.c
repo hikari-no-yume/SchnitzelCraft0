@@ -236,43 +236,6 @@ void sendPacket_despawn(SOCKET socket, char id){
     sendByte(socket, id); // Player ID
 }
 
-void backupmap(){
-    int32_t header;
-    FILE* fp;
-    char fname[255];
-    int backupinc = 0;
-
-    puts("Beginning map backup...");
-    
-    //if (fopen_s(&fp, "backups/backupinc.sys", "rb")==0){
-    fp = fopen("backups/backupinc.sys", "rb");
-    if (fp!=NULL){
-        fread(&backupinc, sizeof(backupinc), 1, fp);
-        fclose(fp);
-    }
-
-    // Randomly rename previus backup
-    //sprintf_s((char*)&fname, 255, "backups/backup_%d.dat", backupinc);
-    sprintf(fname, "backups/backup_%d.dat", backupinc);
-    rename("backups/backup.dat", fname);
-    backupinc++;
-
-    printf("Saving map backup...");
-    fp = fopen("backups/backup.dat", "wb");
-    //fopen_s(&fp, "backups/backup.dat", "wb");
-    header = htonl(mapsize);
-    fwrite(&header,sizeof(int32_t),1,fp);
-    fwrite(block,sizeof(char)*mapsize,1,fp);
-    fclose(fp);
-    printf("done.\n");
-
-    //if (fopen_s(&fp, "backups/backupinc.sys", "wb")==0){
-    fp = fopen("backups/backupinc.sys", "wb");
-    if (fp!=NULL){
-        fwrite(&backupinc, sizeof(backupinc), 1, fp);
-        fclose(fp);
-    }
-}
 char* setBlock(short x, short y, short z, char type){
     char* p;
     p=blockAt(x,y,z);
@@ -318,6 +281,44 @@ char touchinglr(short x, short y, short z, char type){
     num = num + touchingdg(x  ,y,z-3,type);num = num + touchingdg(x  ,y,z,type);num = num + touchingdg(x  ,y,z+3,type);
     num = num + touchingdg(x-3,y,z-3,type);num = num + touchingdg(x-3,y,z,type);num = num + touchingdg(x-3,y,z+3,type);
     return num; return 0;
+}
+
+void backupmap(){
+    int32_t header;
+    FILE* fp;
+    char fname[255];
+    int backupinc = 0;
+
+    puts("Beginning map backup...");
+    
+    //if (fopen_s(&fp, "backups/backupinc.sys", "rb")==0){
+    fp = fopen("backups/backupinc.sys", "rb");
+    if (fp!=NULL){
+        fread(&backupinc, sizeof(backupinc), 1, fp);
+        fclose(fp);
+    }
+
+    // Randomly rename previus backup
+    //sprintf_s((char*)&fname, 255, "backups/backup_%d.dat", backupinc);
+    sprintf(fname, "backups/backup_%d.dat", backupinc);
+    rename("backups/backup.dat", fname);
+    backupinc++;
+
+    printf("Saving map backup...");
+    fp = fopen("backups/backup.dat", "wb");
+    //fopen_s(&fp, "backups/backup.dat", "wb");
+    header = htonl(mapsize);
+    fwrite(&header,sizeof(int32_t),1,fp);
+    fwrite(block,sizeof(char)*mapsize,1,fp);
+    fclose(fp);
+    printf("done.\n");
+
+    //if (fopen_s(&fp, "backups/backupinc.sys", "wb")==0){
+    fp = fopen("backups/backupinc.sys", "wb");
+    if (fp!=NULL){
+        fwrite(&backupinc, sizeof(backupinc), 1, fp);
+        fclose(fp);
+    }
 }
 
 void generateMap(int type) {
