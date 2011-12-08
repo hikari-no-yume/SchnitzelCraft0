@@ -221,6 +221,15 @@ void sendPacket_spawnPlayer(SOCKET socket, char id, char *name, short x, short y
     sendByte(socket, pitch); // Send Pitch
 }
 
+void sendPacket_positionAndOrientation(SOCKET socket, char id, short x, short y, short z, char heading, char pitch){
+    sendByte(socket, 0x08); // Position and Orientation Update
+    sendByte(socket, id); // Player ID
+    sendInt16(socket, x); // Send X
+    sendInt16(socket, y); // Send Y
+    sendInt16(socket, z); // Send Z
+    sendByte(socket, heading); // Send Heading
+    sendByte(socket, pitch); // Send Pitch
+}
 
 void backupmap(){
     int32_t header;
@@ -775,13 +784,7 @@ exitloop:
                                 client[i].x=6*32;
                                 client[i].y=(mapy/2+10)*32;
                                 client[i].z=6*32;
-                                sendByte(client[i].socket, 0x08); // Teleport
-                                sendByte(client[i].socket, 0xFF); // Player ID
-                                sendInt16(client[i].socket, client[i].x); // X
-                                sendInt16(client[i].socket, client[i].y); // Y
-                                sendInt16(client[i].socket, client[i].z); // Z
-                                sendByte(client[i].socket, client[i].heading); // Heading
-                                sendByte(client[i].socket, client[i].pitch); // Pitch
+                                sendPacket_positionAndOrientation(client[i].socket, 0xFF /* Teleport */, client[i].x, client[i].y, client[i].z, client[i].heading, client[i].pitch);
                                 printf("done.\n");
                                 client[i].stage=4;
                             break;
@@ -789,33 +792,15 @@ exitloop:
                                 for(j = 0;j < maxclients;j++){ // Send Player Positions
                                     if (client[j].used==1){
                                         if (j!=i){
-                                            sendByte(client[i].socket, 0x08); // Position and Orientation Update
-                                            sendByte(client[i].socket, j); // Player ID
-                                            sendInt16(client[i].socket, client[j].x); // Send X
-                                            sendInt16(client[i].socket, client[j].y); // Send Y
-                                            sendInt16(client[i].socket, client[j].z); // Send Z
-                                            sendByte(client[i].socket, client[j].heading); // Send Heading
-                                            sendByte(client[i].socket, client[j].pitch); // Send Pitch
+                                            sendPacket_positionAndOrientation(client[i].socket, j, client[j].x, client[j].y, client[j].z, client[j].heading, client[j].pitch);
                                         }
                                         if (flippy==1){
                                             // Flippy
-                                            sendByte(client[i].socket, 0x08); // Position and Orientation Update
-                                            sendByte(client[i].socket, 64+j); // Player ID
-                                            sendInt16(client[i].socket, (mapx*32)-client[j].x); // Send X
-                                            sendInt16(client[i].socket, client[j].y); // Send Y
-                                            sendInt16(client[i].socket, (mapz*32)-client[j].z); // Send Z
-                                            sendByte(client[i].socket, client[j].heading+127);
-                                            sendByte(client[i].socket, client[j].pitch); // Send Pitch
+                                            sendPacket_positionAndOrientation(client[i].socket, 64+j, (mapx*32)-client[j].x, client[j].y, (mapz*32)-client[j].z, client[j].heading+127, client[j].pitch);
                                         }
                                     }
                                     if (mob[j].used==1&&mob[j].respawn==0){
-                                        sendByte(client[i].socket, 0x08); // Position and Orientation Update
-                                        sendByte(client[i].socket, j); // Player ID
-                                        sendInt16(client[i].socket, mob[j].x); // Send X
-                                        sendInt16(client[i].socket, mob[j].y); // Send Y
-                                        sendInt16(client[i].socket, mob[j].z); // Send Z
-                                        sendByte(client[i].socket, mob[j].heading); // Send Heading
-                                        sendByte(client[i].socket, mob[j].pitch); // Send Pitch
+                                        sendPacket_positionAndOrientation(client[i].socket, j, mob[j].x, mob[j].y, mob[j].z, mob[j].heading, mob[j].pitch);
                                     }
                                 }
                             break;
