@@ -196,18 +196,38 @@ int32_t recvInt32(SOCKET socket) {
     return ntohl(value);
 }
 
+void sendPacket_welcome(SOCKET socket, char version, char *name, char *motd, char op){
+    sendByte(socket, 0x00); // Welcome
+    sendByte(socket, version); // Protocol Version
+    sendByteArray(socket, name, 64); // Server Name
+    sendByteArray(socket, motd, 64); // MOTD
+    sendByte(socket, op); // OP status
+}
+
+void sendPacket_levelInitialize(SOCKET socket){
+    sendByte(socket, 0x02);
+}
+
+void sendPacket_levelChunk(SOCKET socket, short size, char *chunk, char percent){
+    sendByte(socket, 0x03); // Level Chunk
+    sendInt16(socket, size); // Chunk Size
+    sendByteArray(socket, chunk, 1024); // Chunk
+    sendByte(socket, percent);
+}
+
+void sendPacket_levelFinalize(SOCKET socket, short x, short y, short z){
+    sendByte(socket, 0x04); // Finalise
+    sendInt16(socket, x); // X
+    sendInt16(socket, y); // Y
+    sendInt16(socket, z); // Z
+}
+
 void sendPacket_setBlock(SOCKET socket, short x, short y, short z, char type){
     sendByte(socket, 0x06); // Set Block
     sendInt16(socket, x); // X
     sendInt16(socket, y); // Y
     sendInt16(socket, z); // Z
     sendByte(socket, type); // Block Type
-}
-
-void sendPacket_chatMessage(SOCKET socket, char id, char *message){
-    sendByte(socket, 0x0d); // Chat Message
-    sendByte(socket, id); // Player ID
-    sendByteArray(socket, message, 64); // Message Body
 }
 
 void sendPacket_spawnPlayer(SOCKET socket, char id, char *name, short x, short y, short z, char heading, char pitch){
@@ -236,30 +256,10 @@ void sendPacket_despawn(SOCKET socket, char id){
     sendByte(socket, id); // Player ID
 }
 
-void sendPacket_welcome(SOCKET socket, char version, char *name, char *motd, char op){
-    sendByte(socket, 0x00); // Welcome
-    sendByte(socket, version); // Protocol Version
-    sendByteArray(socket, name, 64); // Server Name
-    sendByteArray(socket, motd, 64); // MOTD
-    sendByte(socket, op); // OP status
-}
-
-void sendPacket_levelInitialize(SOCKET socket){
-    sendByte(socket, 0x02);
-}
-
-void sendPacket_levelChunk(SOCKET socket, short size, char *chunk, char percent){
-    sendByte(socket, 0x03); // Level Chunk
-    sendInt16(socket, size); // Chunk Size
-    sendByteArray(socket, chunk, 1024); // Chunk
-    sendByte(socket, percent);
-}
-
-void sendPacket_levelFinalize(SOCKET socket, short x, short y, short z){
-    sendByte(socket, 0x04); // Finalise
-    sendInt16(socket, x); // X
-    sendInt16(socket, y); // Y
-    sendInt16(socket, z); // Z
+void sendPacket_chatMessage(SOCKET socket, char id, char *message){
+    sendByte(socket, 0x0d); // Chat Message
+    sendByte(socket, id); // Player ID
+    sendByteArray(socket, message, 64); // Message Body
 }
 
 void sendPacket_kick(SOCKET socket, char *message){
