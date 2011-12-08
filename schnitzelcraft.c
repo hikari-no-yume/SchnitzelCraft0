@@ -219,30 +219,30 @@ void backupmap(){
 
     puts("Beginning map backup...");
     
-    //if (fopen_s(&fp, "backups\\backupinc.sys", "rb")==0){
-    fp = fopen("backups\\backupinc.sys", "rb");
+    //if (fopen_s(&fp, "backups/backupinc.sys", "rb")==0){
+    fp = fopen("backups/backupinc.sys", "rb");
     if (fp!=NULL){
         fread(&backupinc, sizeof(backupinc), 1, fp);
         fclose(fp);
     }
 
     // Randomly rename previus backup
-    //sprintf_s((char*)&fname, 255, "backups\\backup_%d.dat", backupinc);
-    sprintf(fname, "backups\\backup_%d.dat", backupinc);
-    rename("backups\\backup.dat", fname);
+    //sprintf_s((char*)&fname, 255, "backups/backup_%d.dat", backupinc);
+    sprintf(fname, "backups/backup_%d.dat", backupinc);
+    rename("backups/backup.dat", fname);
     backupinc++;
 
     printf("Saving map backup...");
-    fp = fopen("backups\\backup.dat", "wb");
-    //fopen_s(&fp, "backups\\backup.dat", "wb");
+    fp = fopen("backups/backup.dat", "wb");
+    //fopen_s(&fp, "backups/backup.dat", "wb");
     header = htonl(mapsize);
     fwrite(&header,sizeof(int32_t),1,fp);
     fwrite(block,sizeof(char)*mapsize,1,fp);
     fclose(fp);
     printf("done.\n");
 
-    //if (fopen_s(&fp, "backups\\backupinc.sys", "wb")==0){
-    fp = fopen("backups\\backupinc.sys", "wb");
+    //if (fopen_s(&fp, "backups/backupinc.sys", "wb")==0){
+    fp = fopen("backups/backupinc.sys", "wb");
     if (fp!=NULL){
         fwrite(&backupinc, sizeof(backupinc), 1, fp);
         fclose(fp);
@@ -362,8 +362,8 @@ int main(int argc, char* argv[])
 
     CreateDirectoryA("backups", 0); // Create backups folder (A as W is default)
 
-    fp = fopen("backups\\backup.dat", "rb");
-    //fopen_s(&fp, "backups\\backup.dat", "rb");
+    fp = fopen("backups/backup.dat", "rb");
+    //fopen_s(&fp, "backups/backup.dat", "rb");
     if (fp!=NULL){ // If map exists load it
         printf("Loading map...");
         fread(&int32buf, sizeof(int32_t), 1, fp); // Skip header
@@ -683,9 +683,9 @@ exitloop:
                                 backupmap();
 
                                 printf("Compressing map data...");
-                                //if (fopen_s(&fpin, "backups\\backup.dat", "rb")==0
+                                //if (fopen_s(&fpin, "backups/backup.dat", "rb")==0
                                 //    &&fopen_s(&fpout, "map.gz", "wb")==0){
-                                fpin = fopen("backups\\backup.dat", "rb");
+                                fpin = fopen("backups/backup.dat", "rb");
                                 fpout = fopen("map.gz", "wb");
                                 if (fpin != NULL && fpout != NULL){
                                     k = def(fpin,fpout,9);
