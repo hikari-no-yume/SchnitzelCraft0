@@ -274,6 +274,20 @@ char* setBlock(short x, short y, short z, char type){
     *p = type;
     return p;
 }
+
+char* setBlock_synced(short x, short y, short z, char type){
+    char *p = setBlock(x, y, z, type);
+    int i;
+    
+    for (i=0;i<maxclients;i++){
+        if (client[i].used==1&&client[i].stage==4){
+            sendPacket_setBlock(client[i].socket, x, y, z, type);
+        }
+    }
+    
+    return p;
+}
+
 char getBlock(short x, short y, short z){
     char* p;
     p=blockAt(x,y,z);
@@ -577,12 +591,7 @@ int main(int argc, char* argv[])
                                     if (getBlock(bc.x,bc.y,bc.z)==0x07||getBlock(bc.x,bc.y,bc.z)==0x09){ // If indestructible
                                         bc.newvalue=getBlock(bc.x,bc.y,bc.z);
                                     }
-                                    setBlock(bc.x,bc.y,bc.z,bc.newvalue);
-                                    for (j=0;j<maxclients;j++){ // Yay moar dirty hax
-                                        if (client[j].used==1&&client[j].stage==4){
-                                            sendPacket_setBlock(client[j].socket, bc.x, bc.y, bc.z, bc.newvalue);
-                                        }
-                                    }
+                                    setBlock_synced(bc.x,bc.y,bc.z,bc.newvalue);
                                     phys=1;
                                     physx=bc.x;
                                     physy=bc.y;
@@ -638,37 +647,16 @@ exitloop:
                     for (j=physx-8;j<physx+8;j++){
                         for (k=physz-8;k<physz+8;k++){
                             if (getBlock(j,physy,k)==0x08&&touchinglr(j, physy, k, 0x13)>0){ // If Liquid Water and Touching Sponge (at long distance)
-                                setBlock(j,physy,k,0x00); // Set to Air
-                                for (l=0;l<maxclients;l++){ // Yay moar dirty hax
-                                    if (client[l].used==1&&client[l].stage==4){
-                                        sendPacket_setBlock(client[l].socket, j, physy, k, 0x00);
-                                    }
-                                }
+                                setBlock_synced(j,physy,k,0x00); // Set to Air
                             }else if (getBlock(j,physy,k)==0x00&&(touching(j, physy, k, 0x08)>0||getBlock(j, physy+1, k)==0x08)){ // If Air Touching Water/Water Above
                                 if (touchinglr(j, physy, k, 0x13)==0){ // Not Touching Sponge (at long distance)
-                                    setBlock(j,physy,k,0x08); // Set to Liquid Water
-                                    for (l=0;l<maxclients;l++){ // Yay moar dirty hax
-                                        if (client[l].used==1&&client[l].stage==4){
-                                            sendPacket_setBlock(client[l].socket, j, physy, k, 0x08);
-                                        }
-                                    }
+                                    setBlock_synced(j,physy,k,0x08); // Set to Liquid Water
                                 }
                             }else if (getBlock(j,physy,k)==0x02&&getBlock(j,physy+1,k)!=0x00){ // If Grass and Vertical is not free
-                                setBlock(j,physy,k,0x03); // Set to Dirt
-                                for (l=0;l<maxclients;l++){ // Yay moar dirty hax
-                                    if (client[l].used==1&&client[l].stage==4){
-                                        sendPacket_setBlock(client[l].socket, j, physy, k, 0x03);
-                                    }
-                                }
+                                setBlock_synced(j,physy,k,0x03); // Set to Dirt
                             }else if (getBlock(j,physy,k)==0x03&&touching(j,physy, k, 0x02)>0){ // Dirt and Touching Grass
                                 if (getBlock(j,physy+1,k)==0x00){ // Vertical is free
-                                    setBlock(j,physy,k,0x02); // Set to Grass
-                                    outbuf[1] = 0x02; // Grass
-                                    for (l=0;l<maxclients;l++){ // Yay moar dirty hax
-                                        if (client[l].used==1&&client[l].stage==4){
-                                            sendPacket_setBlock(client[l].socket, j, physy, k, 0x02);
-                                        }
-                                    }
+                                    setBlock_synced(j,physy,k,0x02); // Set to Grass
                                 }
                             }
                         }
@@ -880,12 +868,7 @@ exitloop:
 
                                 if (getBlock(mob[j].x/32, mob[j].y/32-1, mob[j].z/32)==0x28){ // Touching Red Mushroom
                                     mob[j].hp = mob[j].hp - 1;
-                                    setBlock(mob[j].x/32, mob[j].y/32-1, mob[j].z/32, 0x00);
-                                    for (k=0;k<maxclients;k++){ // Yay moar dirty hax
-                                        if (client[k].used==1&&client[k].stage==4){
-                                            sendPacket_setBlock(client[k].socket, mob[j].x/32, mob[j].y/32-1, mob[j].z/32, 0x00);
-                                        }
-                                    }
+                                    setBlock_synced(mob[j].x/32, mob[j].y/32-1, mob[j].z/32, 0x00);
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
                                         if (client[k].used==1&&client[k].stage==4){
                                             strcpy(outbuf, "&7Zombie   &cHIT                                                  ");
