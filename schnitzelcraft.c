@@ -236,6 +236,11 @@ void sendPacket_despawn(SOCKET socket, char id){
     sendByte(socket, id); // Player ID
 }
 
+void sendPacket_kick(SOCKET socket, char *message){
+    sendByte(socket, 0x0e);
+    sendByteArray(socket, message, 64);
+}
+
 char* setBlock(short x, short y, short z, char type){
     char* p;
     p=blockAt(x,y,z);
@@ -532,8 +537,8 @@ int main(int argc, char* argv[])
                                             }
                                         }
                                     }else{
-                                        memcpy((char*)&outbuf, "\x0eIncompatible Protocol Version                                   ", 65);
-                                        sendByteArray(client[i].socket, outbuf, 65);
+                                        memcpy((char*)&outbuf, "Incompatible Protocol Version                                   ", 64);
+                                        sendPacket_kick(client[i].socket, outbuf);
                                         printf("Client %d kicked: Incompatible Protocol Version ", i);
                                         printf("(%d)\n", client[i].protocol);
                                         closesocket(client[i].socket);
@@ -631,8 +636,8 @@ int main(int argc, char* argv[])
                             break;
                             default:
                                 printf("Error: Unknown packet type: %x\n", inbuf[0]);
-                                memcpy((char*)&outbuf, "\x0eIncompatible Protocol Version                                   ", 65);
-                                sendByteArray(client[i].socket, outbuf, 65);
+                                memcpy((char*)&outbuf, "Incompatible Protocol Version                                   ", 64);
+                                sendPacket_kick(client[i].socket, outbuf);
                                 printf("Client %d kicked: Incompatible Protocol Version\n", i);
                                 closesocket(client[i].socket);
                                 memset(&client[i].socket,0,sizeof(client[i].socket));
