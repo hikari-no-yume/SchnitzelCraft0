@@ -455,7 +455,6 @@ int main(int argc, char* argv[])
     const int DEFAULT_PORT = 25565;
     int j = 0, i = 0, k = 0, l = 0, m = 0, physx = 0, physy = 0, physz = 0, phys = 0, lastmsg = 65, thisclient = 0, sal = 0, filesize = 0, iMode = 1;
     int32_t int32buf = 0;
-    char outbuf[1024], inbuf[1024];
     struct sockaddr_in sa;
     struct fd_set readable, writeable;
     struct timeval timeout;
@@ -560,8 +559,6 @@ int main(int argc, char* argv[])
                 system("pause");
             }
             // *** CONNECT END ***
-            memset(&inbuf,0,sizeof(inbuf));
-            memset(&outbuf,0,sizeof(outbuf));
             for(i = 0;i < maxclients;i++){
                 if (client[i].used==1){
                     FD_ZERO(&readable);
@@ -570,17 +567,19 @@ int main(int argc, char* argv[])
                     // *** RECV BEGIN ***
                     //if (FD_ISSET(client[i].socket, &readable)){
                     while(FD_ISSET(client[i].socket, &readable)){
-                        inbuf[0] = recvByte(client[i].socket);
-                        switch (inbuf[0]){
+                        char packettype;
+                        packettype = recvByte(client[i].socket);
+                        switch (packettype){
                             case 0x00:
                                 if (client[i].stage==0){
                                     client[i].protocol = recvByte(client[i].socket);
                                     if (client[i].protocol == 0x07){ // 7
                                         char namebuf[64];
+                                        char verbuf[64];
                                         recvByteArray(client[i].socket, namebuf, 64); // Get Name
                                         paddedToCString(namebuf, client[i].name);
                                         printf("Client %d identified: %s\n", i, client[i].name);
-                                        recvByteArray(client[i].socket, outbuf, 64); // Skip Verification Key
+                                        recvByteArray(client[i].socket, verbuf, 64); // Skip Verification Key
                                         recvByte(client[i].socket); // Skip Unused byte
                                         client[i].stage = 1;
                                         for (j=0;j<maxclients;j++){ // Yay EVEN MOAR dirty hax
@@ -625,13 +624,15 @@ int main(int argc, char* argv[])
                             case 0x05: // Set Block
                                 {
                                     struct BLOCKCHANGE bc;
+                                    char mode;
+                                    
                                     bc.player = i;
                                     bc.x = recvInt16(client[i].socket); // X
                                     bc.y = recvInt16(client[i].socket); // Y
                                     bc.z = recvInt16(client[i].socket); // Z
-                                    inbuf[0] = recvByte(client[i].socket); // Get Mode
+                                    mode = recvByte(client[i].socket); // Get Mode
                                     bc.newvalue = recvByte(client[i].socket); // Block type
-                                    if (inbuf[0]==0x00){ // If deleted
+                                    if (mode==0x00){ // If deleted
                                         bc.newvalue=0x00; // Air (deleted)
                                     }
                                     if (bc.newvalue==0x27){ // If Brown Mushroom
@@ -685,7 +686,7 @@ int main(int argc, char* argv[])
                             default:
                                 {
                                     char kickbuf[64];
-                                    printf("Error: Unknown packet type: %x\n", inbuf[0]);
+                                    printf("Error: Unknown packet type: %x\n", packettype);
                                     cToPaddedString("Incompatible Protocol Version", kickbuf);
                                     sendPacket_kick(client[i].socket, kickbuf);
                                     printf("Client %d kicked: Incompatible Protocol Version\n", i);
@@ -722,8 +723,6 @@ exitloop:
                         }
                     }
                     #endif
-                    memset(&inbuf,0,sizeof(inbuf));
-                    memset(&outbuf,0,sizeof(outbuf));
                     FD_ZERO(&writeable);
                     FD_SET(client[i].socket, &writeable);
                     select((int)NULL, NULL, &writeable, NULL, &timeout);
@@ -780,11 +779,13 @@ exitloop:
                                     k = 0;
                                     j = 0;
                                     while(1){
-                                        j=fread(&inbuf,1,1024,fpin);
-                                        memset(&outbuf,0,sizeof(outbuf));
-                                        memcpy(&outbuf,&inbuf,j);
+                                        char chunkin[1024];
+                                        char chunk[1024];
+                                        j=fread(chunkin,1,1024,fpin);
+                                        memset(chunk,0,1024);
+                                        memcpy(chunk,chunkin,j);
                                         k = k + j;
-                                        sendPacket_levelChunk(client[i].socket, j, outbuf, (char)floor((double)k*(100/(double)filesize)));
+                                        sendPacket_levelChunk(client[i].socket, j, chunk, (char)floor((double)k*(100/(double)filesize)));
                                         if (feof(fpin)!=0){
                                             sendPacket_levelFinalize(client[i].socket, mapx, mapy, mapz);
                                             printf("Finalized map data - total %d bytes sent.\n", k);
@@ -848,6 +849,7 @@ exitloop:
                     for (j=0;j<maxclients;j++){
                         if (mob[j].used==1){
                             if (mob[j].respawn==0){ // If timer is 0
+                                char upper, lower;
                                 if (getBlock(mob[j].x/32, mob[j].y/32-2, mob[j].z/32)==0x00){ // Lame Gravity
                                     mob[j].y = mob[j].y - 8;
                                 }
@@ -857,37 +859,37 @@ exitloop:
                                 switch (mob[j].direction){
                                     case 0: // Forward
                                         mob[j].x = mob[j].x + 8;
-                                        outbuf[0] = getBlock(mob[j].x/32+1, mob[j].y/32, mob[j].z/32);
-                                        outbuf[1] = getBlock(mob[j].x/32+1, mob[j].y/32-1, mob[j].z/32);
+                                        upper = getBlock(mob[j].x/32+1, mob[j].y/32, mob[j].z/32);
+                                        lower = getBlock(mob[j].x/32+1, mob[j].y/32-1, mob[j].z/32);
                                     break;
                                     case 1: // Right
                                         mob[j].z = mob[j].z + 8;
-                                        outbuf[0] = getBlock(mob[j].x/32, mob[j].y/32, mob[j].z/32+1);
-                                        outbuf[1] = getBlock(mob[j].x/32, mob[j].y/32-1, mob[j].z/32+1);
+                                        upper = getBlock(mob[j].x/32, mob[j].y/32, mob[j].z/32+1);
+                                        lower = getBlock(mob[j].x/32, mob[j].y/32-1, mob[j].z/32+1);
                                     break;
                                     case 2: // Back
                                         mob[j].x = mob[j].x - 8;
-                                        outbuf[0] = getBlock(mob[j].x/32-1, mob[j].y/32, mob[j].z/32);
-                                        outbuf[1] = getBlock(mob[j].x/32-1, mob[j].y/32-1, mob[j].z/32);
+                                        upper = getBlock(mob[j].x/32-1, mob[j].y/32, mob[j].z/32);
+                                        lower = getBlock(mob[j].x/32-1, mob[j].y/32-1, mob[j].z/32);
                                     break;
                                     case 3: // Left
                                         mob[j].z = mob[j].z - 8;
-                                        outbuf[0] = getBlock(mob[j].x/32, mob[j].y/32, mob[j].z/32-1);
-                                        outbuf[1] = getBlock(mob[j].x/32, mob[j].y/32-1, mob[j].z/32-1);
+                                        upper = getBlock(mob[j].x/32, mob[j].y/32, mob[j].z/32-1);
+                                        lower = getBlock(mob[j].x/32, mob[j].y/32-1, mob[j].z/32-1);
                                     break;
                                 }
                                 // Lame Collision avoidance
-                                if (outbuf[0]!=0x00 // Not air
-                                    &&outbuf[0]!=0x08 // Not water
-                                    &&outbuf[0]!=0x28){ // Not Red Mushroom (for epick trappawge)
+                                if (upper!=0x00 // Not air
+                                    &&upper!=0x08 // Not water
+                                    &&upper!=0x28){ // Not Red Mushroom (for epick trappawge)
                                     mob[j].direction++;
                                     mob[j].x = (mob[j].x/32)*32+16;
                                     mob[j].y = (mob[j].y/32)*32+16;
                                     mob[j].z = (mob[j].z/32)*32+16;
                                 // JUMP
-                                }else if (outbuf[1]!=0x00 // Not air
-                                    &&outbuf[1]!=0x08 // Not water
-                                    &&outbuf[1]!=0x28){ // Not Red Mushroom (for epick trappawge)
+                                }else if (lower!=0x00 // Not air
+                                    &&lower!=0x08 // Not water
+                                    &&lower!=0x28){ // Not Red Mushroom (for epick trappawge)
                                     mob[j].y=mob[j].y+32; // Jump
                                 switch (mob[j].direction){
                                     case 0: // Forward
