@@ -453,8 +453,7 @@ int main(int argc, char* argv[])
 {
     // Vars
     const int DEFAULT_PORT = 25565;
-    int j = 0, i = 0, k = 0, l = 0, m = 0, physx = 0, physy = 0, physz = 0, phys = 0, lastmsg = 65, thisclient = 0, sal = 0, filesize = 0, iMode = 1;
-    int32_t int32buf = 0;
+    int j = 0, i = 0, k = 0, l = 0, m = 0, physx = 0, physy = 0, physz = 0, phys = 0, sal = 0, iMode = 1;
     struct sockaddr_in sa;
     struct fd_set readable, writeable;
     struct timeval timeout;
@@ -472,8 +471,9 @@ int main(int argc, char* argv[])
     fp = fopen("backups/backup.dat", "rb");
     //fopen_s(&fp, "backups/backup.dat", "rb");
     if (fp!=NULL){ // If map exists load it
+        int32_t header;
         printf("Loading map...");
-        fread(&int32buf, sizeof(int32_t), 1, fp); // Skip header
+        fread(&header, sizeof(int32_t), 1, fp); // Skip header
         fread(block, sizeof(int8_t)*mapsize, 1, fp); // Read map from backup
         fclose(fp);
     }else{ // Else create anew
@@ -532,6 +532,7 @@ int main(int argc, char* argv[])
                     if (FD_ISSET(server, &readable)){ // If there are waiting connections...
                         tempclient = accept(server, (SOCKADDR*)&sa, &sal);
                         if (tempclient!=SOCKET_ERROR){
+                            int thisclient;
                             for(i = 0;i < maxclients;i++){
                                 if (client[i].used != 1&&mob[i].used != 1){
                                     thisclient = i;
@@ -680,7 +681,6 @@ int main(int argc, char* argv[])
                                             sendPacket_chatMessage(client[j].socket, i, msgbuf);
                                         }
                                     }
-                                    lastmsg=i;
                                 }
                             break;
                             default:
@@ -772,6 +772,7 @@ exitloop:
                                 fpin = fopen("map.gz", "rb");
                                 //fopen_s(&fpin, "map.gz", "rb");
                                 if (fpin != NULL){
+                                    int filesize;
                                     fseek(fpin, 0L, SEEK_END);
                                     filesize = ftell(fpin); // Get file size
                                     fseek(fpin, 0L, SEEK_SET);
