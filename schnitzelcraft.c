@@ -13,8 +13,6 @@ typedef signed short int16_t;
 typedef unsigned long uint32_t;
 typedef signed long int32_t;
 
-//#define fopen_s(f, n, m) (((int)((*f = fopen(n, m)), 0))
-
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
 #  include <fcntl.h>
 #  include <io.h>
@@ -76,7 +74,7 @@ struct CLIENT {
 
 char *block;
 int16_t mapx=256, mapy=128, mapz=256;
-int32_t mapsize = 0; // 256x128x256
+int32_t mapsize = 0;
 struct CLIENT client[maxclients];
 int clients;
 struct MOB mob[maxclients];
@@ -360,7 +358,6 @@ void backupmap(){
 
     puts("Beginning map backup...");
     
-    //if (fopen_s(&fp, "backups/backupinc.sys", "rb")==0){
     fp = fopen("backups/backupinc.sys", "rb");
     if (fp!=NULL){
         fread(&backupinc, sizeof(backupinc), 1, fp);
@@ -368,21 +365,18 @@ void backupmap(){
     }
 
     // Randomly rename previus backup
-    //sprintf_s((char*)&fname, 255, "backups/backup_%d.dat", backupinc);
     sprintf(fname, "backups/backup_%d.dat", backupinc);
     rename("backups/backup.dat", fname);
     backupinc++;
 
     printf("Saving map backup...");
     fp = fopen("backups/backup.dat", "wb");
-    //fopen_s(&fp, "backups/backup.dat", "wb");
     header = htonl(mapsize);
     fwrite(&header,sizeof(int32_t),1,fp);
     fwrite(block,sizeof(char)*mapsize,1,fp);
     fclose(fp);
     printf("done.\n");
 
-    //if (fopen_s(&fp, "backups/backupinc.sys", "wb")==0){
     fp = fopen("backups/backupinc.sys", "wb");
     if (fp!=NULL){
         fwrite(&backupinc, sizeof(backupinc), 1, fp);
@@ -469,7 +463,6 @@ int main(int argc, char* argv[])
     CreateDirectoryA("backups", 0); // Create backups folder (A as W is default)
 
     fp = fopen("backups/backup.dat", "rb");
-    //fopen_s(&fp, "backups/backup.dat", "rb");
     if (fp!=NULL){ // If map exists load it
         int32_t header;
         printf("Loading map...");
@@ -499,7 +492,6 @@ int main(int argc, char* argv[])
         mob[i].x=(rand()%mapx)*32+16;
         mob[i].y=(mapy/2+10)*32;
         mob[i].z=(rand()%mapz)*32+16;
-        //mob[i].hp = 5;
         mob[i].hp = 1; // Insta-kill
         mob[i].direction = 0;
         mob[i].heading = 0;
@@ -544,7 +536,6 @@ int main(int argc, char* argv[])
                             client[thisclient].used = 1;
                             client[thisclient].stage = 0;
                             client[thisclient].socket = tempclient;
-                            //memset(&tempclient, 0, sizeof tempclient);
                             clients++;
                         }else{
                             printf("error: %d", WSAGetLastError());
@@ -566,7 +557,6 @@ int main(int argc, char* argv[])
                     FD_SET(client[i].socket, &readable);
                     select((int)NULL, &readable, NULL, NULL, &timeout);
                     // *** RECV BEGIN ***
-                    //if (FD_ISSET(client[i].socket, &readable)){
                     while(FD_ISSET(client[i].socket, &readable)){
                         char packettype;
                         packettype = recvByte(client[i].socket);
@@ -740,8 +730,6 @@ exitloop:
                                 backupmap();
 
                                 printf("Compressing map data...");
-                                //if (fopen_s(&fpin, "backups/backup.dat", "rb")==0
-                                //    &&fopen_s(&fpout, "map.gz", "wb")==0){
                                 fpin = fopen("backups/backup.dat", "rb");
                                 fpout = fopen("map.gz", "wb");
                                 if (fpin != NULL && fpout != NULL){
@@ -770,7 +758,6 @@ exitloop:
 
                                 printf("Sending compressed map data...\n");
                                 fpin = fopen("map.gz", "rb");
-                                //fopen_s(&fpin, "map.gz", "rb");
                                 if (fpin != NULL){
                                     int filesize;
                                     fseek(fpin, 0L, SEEK_END);
@@ -930,9 +917,6 @@ exitloop:
                                     }
                                 }
                                 if (mob[j].hp<=0){ // Kill
-                                    //mob[j].x=6*32+16;
-                                    //mob[j].y=(mapy/2+10)*32;
-                                    //mob[j].z=6*32+16;
                                     mob[j].x=(rand()%mapx)*32+16;
                                     mob[j].y=(mapy/2+10)*32;
                                     mob[j].z=(rand()%mapz)*32+16;
