@@ -161,6 +161,34 @@ double noise(double x,double y)
  return interpolate1(int1,int2,y-floory);//Here we use y-floory, to get the 2nd dimension.
 }
 
+char* paddedToCString(const char *padded, char *out) {
+    int i, len;
+    len = -1;
+    for (i = 63; i >= 0; i--) {
+        if (padded[i] != ' ') {
+            len = i + 1;
+            break;
+        }
+    }
+    if (len == -1) {
+        out[0] = '\0';
+    }else{
+        memcpy(out, padded, len);
+        out[len] = '\0';
+    }
+    return out;
+}
+
+char* cToPaddedString(const char *cstring, char *out) {
+    size_t len = strlen(cstring);
+    memset(out, ' ', 64);
+    if (len > 64)
+        memcpy(out, cstring, 64);
+    else
+        memcpy(out, cstring, len);
+    return out;
+}
+
 size_t sendByte(SOCKET socket, char value) {
     return send(socket, (char*)&value, sizeof(char), 0);
 }
@@ -197,10 +225,14 @@ int32_t recvInt32(SOCKET socket) {
 }
 
 void sendPacket_welcome(SOCKET socket, char version, char *name, char *motd, char op){
+    char namebuf[64];
+    char motdbuf[64];
     sendByte(socket, 0x00); // Welcome
     sendByte(socket, version); // Protocol Version
-    sendByteArray(socket, name, 64); // Server Name
-    sendByteArray(socket, motd, 64); // MOTD
+    cToPaddedString(name, namebuf);
+    cToPaddedString(motd, motdbuf);
+    sendByteArray(socket, namebuf, 64); // Server Name
+    sendByteArray(socket, motdbuf, 64); // MOTD
     sendByte(socket, op); // OP status
 }
 
@@ -231,9 +263,11 @@ void sendPacket_setBlock(SOCKET socket, short x, short y, short z, char type){
 }
 
 void sendPacket_spawnPlayer(SOCKET socket, char id, char *name, short x, short y, short z, char heading, char pitch){
+    char namebuf[64];
     sendByte(socket, 0x07); // Spawn Player
     sendByte(socket, id); // Player ID
-    sendByteArray(socket, name, 64); // Send Name
+    cToPaddedString(name, namebuf);
+    sendByteArray(socket, namebuf, 64); // Send Name
     sendInt16(socket, x); // Send X
     sendInt16(socket, y); // Send Y
     sendInt16(socket, z); // Send Z
@@ -257,14 +291,18 @@ void sendPacket_despawn(SOCKET socket, char id){
 }
 
 void sendPacket_chatMessage(SOCKET socket, char id, char *message){
+    char messagebuf[64];
     sendByte(socket, 0x0d); // Chat Message
     sendByte(socket, id); // Player ID
-    sendByteArray(socket, message, 64); // Message Body
+    cToPaddedString(message, messagebuf);
+    sendByteArray(socket, messagebuf, 64); // Message Body
 }
 
 void sendPacket_kick(SOCKET socket, char *message){
+    char messagebuf[64];
     sendByte(socket, 0x0e);
-    sendByteArray(socket, message, 64);
+    cToPaddedString(message, messagebuf);
+    sendByteArray(socket, messagebuf, 64);
 }
 
 char* setBlock(short x, short y, short z, char type){
@@ -415,7 +453,6 @@ int main(int argc, char* argv[])
 {
     // Vars
     const int DEFAULT_PORT = 25565;
-    const char welcomebuf[] = "AJF's Minecraft Server powered by SchnitzelCraft                gg2 is awesome etc...                                           ";
     int j = 0, i = 0, k = 0, l = 0, m = 0, physx = 0, physy = 0, physz = 0, phys = 0, lastmsg = 65, thisclient = 0, sal = 0, filesize = 0, iMode = 1;
     int32_t int32buf = 0;
     char outbuf[1024], inbuf[1024];
@@ -469,9 +506,7 @@ int main(int argc, char* argv[])
         mob[i].heading = 0;
         mob[i].pitch = 0;
         mob[i].respawn = 0;
-        //strcpy(&mob[i].name, "ZombieMob                                                       ");
-        memset(&mob[i].name, ' ', 64);
-        memcpy(&mob[i].name, "&2Zombie&7Mob", 13);
+        strcpy(mob[i].name, "&2Zombie&7Mob");
     }
 
     // init
@@ -541,30 +576,25 @@ int main(int argc, char* argv[])
                                 if (client[i].stage==0){
                                     client[i].protocol = recvByte(client[i].socket);
                                     if (client[i].protocol == 0x07){ // 7
-                                        recvByteArray(client[i].socket, client[i].name, 64); // Get Name
-                                        client[i].name[64]='\0'; // Null terminate
-                                        printf("Client %d identified: ", i);
-                                        printf(client[i].name);
+                                        char namebuf[64];
+                                        recvByteArray(client[i].socket, namebuf, 64); // Get Name
+                                        paddedToCString(namebuf, client[i].name);
+                                        printf("Client %d identified: %s\n", i, client[i].name);
                                         recvByteArray(client[i].socket, outbuf, 64); // Skip Verification Key
                                         recvByte(client[i].socket); // Skip Unused byte
                                         client[i].stage = 1;
                                         for (j=0;j<maxclients;j++){ // Yay EVEN MOAR dirty hax
                                             if (client[j].used==1&&j!=i&&client[j].stage==4){
+                                                char joinbuf[64];
                                                 sendPacket_spawnPlayer(client[j].socket, i, client[i].name, client[i].x, client[i].y, client[i].z, client[i].heading, client[i].pitch);
-                                                outbuf[0]='&';
-                                                outbuf[1]='e'; // Green
-                                                outbuf[2]='J';
-                                                outbuf[3]='O';
-                                                outbuf[4]='I';
-                                                outbuf[5]='N';
-                                                outbuf[6]=' ';
-                                                memcpy(&outbuf[7], &client[i].name, 57);
-                                                sendPacket_chatMessage(client[j].socket, i, outbuf);
+                                                sprintf(joinbuf, "&e%s joined", client[i].name);
+                                                sendPacket_chatMessage(client[j].socket, i, joinbuf);
                                             }
                                         }
                                     }else{
-                                        memcpy((char*)&outbuf, "Incompatible Protocol Version                                   ", 64);
-                                        sendPacket_kick(client[i].socket, outbuf);
+                                        char kickbuf[64];
+                                        cToPaddedString(kickbuf, "Incompatible Protocol Version");
+                                        sendPacket_kick(client[i].socket, kickbuf);
                                         printf("Client %d kicked: Incompatible Protocol Version ", i);
                                         printf("(%d)\n", client[i].protocol);
                                         closesocket(client[i].socket);
@@ -577,19 +607,13 @@ int main(int argc, char* argv[])
                                     client[i].used=0;
                                     for (j=0;j<maxclients;j++){ // ZOMG MOAR HAX
                                         if (client[j].used==1&&client[j].stage==4){
+                                            char partbuf[64];
                                             sendPacket_despawn(client[j].socket, i);
                                             if (flippy==1){
                                                 sendPacket_despawn(client[j].socket, 64+i); // Despawn Flippy
                                             }
-                                            outbuf[0]='&'; // Yellow
-                                            outbuf[1]='c';
-                                            outbuf[2]='P';
-                                            outbuf[3]='A';
-                                            outbuf[4]='R';
-                                            outbuf[5]='T';
-                                            outbuf[6]=' ';
-                                            memcpy(&outbuf[7], &client[i].name, 57);
-                                            sendPacket_chatMessage(client[j].socket, i, outbuf);
+                                            sprintf(partbuf, "&c%s left", client[i].name);
+                                            sendPacket_chatMessage(client[j].socket, i, partbuf);
                                         }
                                     }
                                     backupmap(); // Save map backup
@@ -642,33 +666,34 @@ int main(int argc, char* argv[])
                                 client[i].pitch = recvByte(client[i].socket); // Get new Player Pitch
                             break;
                             case 0x0d: // Chat Message
-                                recvByte(client[i].socket); // Skip Player ID
-                                recvByteArray(client[i].socket, inbuf, 64); // Recieve message
-                                for (j=0;j<maxclients;j++){ // Yay dirty hax
-                                    if (client[j].used==1&&client[j].stage==4){
-                                        if (lastmsg!=i){
-                                            outbuf[0]='&'; // Yellow
-                                            outbuf[1]='e';
-                                            memcpy(&outbuf[2], &client[i].name, 62);
-                                            sendPacket_chatMessage(client[j].socket, i, outbuf);
+                                {
+                                    char messagebuf[64];
+                                    char csmessagebuf[65];
+                                    recvByte(client[i].socket); // Skip Player ID
+                                    recvByteArray(client[i].socket, messagebuf, 64); // Recieve message
+                                    paddedToCString(messagebuf, csmessagebuf);
+                                    for (j=0;j<maxclients;j++){ // Yay dirty hax
+                                        if (client[j].used==1&&client[j].stage==4){
+                                            char msgbuf[256];
+                                            sprintf(msgbuf, "&e<%s> &f%s", client[i].name, csmessagebuf);
+                                            sendPacket_chatMessage(client[j].socket, i, msgbuf);
                                         }
-                                        outbuf[0]='-'; // Indent
-                                        outbuf[1]=']';
-                                        memcpy(&outbuf[2], &inbuf, 62);
-                                        sendPacket_chatMessage(client[j].socket, i, outbuf);
                                     }
+                                    lastmsg=i;
                                 }
-                                lastmsg=i;
                             break;
                             default:
-                                printf("Error: Unknown packet type: %x\n", inbuf[0]);
-                                memcpy((char*)&outbuf, "Incompatible Protocol Version                                   ", 64);
-                                sendPacket_kick(client[i].socket, outbuf);
-                                printf("Client %d kicked: Incompatible Protocol Version\n", i);
-                                closesocket(client[i].socket);
-                                memset(&client[i].socket,0,sizeof(client[i].socket));
-                                client[i].used=0;
-                                goto exitloop;
+                                {
+                                    char kickbuf[64];
+                                    printf("Error: Unknown packet type: %x\n", inbuf[0]);
+                                    cToPaddedString("Incompatible Protocol Version", kickbuf);
+                                    sendPacket_kick(client[i].socket, kickbuf);
+                                    printf("Client %d kicked: Incompatible Protocol Version\n", i);
+                                    closesocket(client[i].socket);
+                                    memset(&client[i].socket,0,sizeof(client[i].socket));
+                                    client[i].used=0;
+                                    goto exitloop;
+                                }
                             break;
                         }
                         FD_ZERO(&readable);
@@ -706,7 +731,7 @@ exitloop:
                     if (FD_ISSET(client[i].socket, &writeable)){
                         switch (client[i].stage){
                             case 1: // Welcome message
-                                sendPacket_welcome(client[i].socket, 0x07, (char*)welcomebuf, (char*)(welcomebuf+64), client[i].op);
+                                sendPacket_welcome(client[i].socket, 0x07, "SchnitzelCraft0 Server", "MOTD would go here but I haven't set one", client[i].op);
                                 printf("Client %d sent welcome message\n", i);
                                 client[i].stage=2;
                             break;
@@ -781,10 +806,11 @@ exitloop:
                                             sendPacket_spawnPlayer(client[i].socket, j, client[j].name, client[j].x, client[j].y, client[j].z, client[j].heading, client[j].pitch);
                                         }
                                         if (flippy==1){
+                                            char namebuf[64];
                                             // Flippy
-                                            memcpy(&outbuf, &client[j].name, 64);
-                                            outbuf[0]='f';
-                                            sendPacket_spawnPlayer(client[i].socket, 64+j, outbuf, (mapx*32)-client[j].x, client[j].y, (mapz*32)-client[j].z, client[j].heading+127, client[j].pitch);
+                                            strcpy(namebuf, client[j].name);
+                                            namebuf[0] = 'f';
+                                            sendPacket_spawnPlayer(client[i].socket, 64+j, namebuf, (mapx*32)-client[j].x, client[j].y, (mapz*32)-client[j].z, client[j].heading+127, client[j].pitch);
                                         }
                                     }
                                     if (mob[j].used==1&&mob[j].respawn==0){
@@ -894,9 +920,9 @@ exitloop:
                                     setBlock_synced(mob[j].x/32, mob[j].y/32-1, mob[j].z/32, 0x00);
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
                                         if (client[k].used==1&&client[k].stage==4){
-                                            strcpy(outbuf, "&7Zombie   &cHIT                                                  ");
-                                            outbuf[9]=0x30+j;
-                                            sendPacket_chatMessage(client[k].socket, 0, outbuf);
+                                            char hitbuf[64];
+                                            sprintf(hitbuf, "&7Zombie %d &cHIT", j);
+                                            sendPacket_chatMessage(client[k].socket, 0, hitbuf);
                                         }
                                     }
                                 }
@@ -913,9 +939,9 @@ exitloop:
                                     mob[j].respawn = 1; // Set timer to 1, respawn
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
                                         if (client[k].used==1&&client[k].stage==4){
-                                            strcpy(outbuf, "&7Zombie   &4DIED                                                 ");
-                                            outbuf[9]=0x30+j;
-                                            sendPacket_chatMessage(client[k].socket, 0, outbuf);
+                                            char diedbuf[64];
+                                            sprintf(diedbuf, "&7Zombie %d &4DIED", j);
+                                            sendPacket_chatMessage(client[k].socket, 0, diedbuf);
                                             sendPacket_despawn(client[k].socket, j); // Despawn
                                         }
                                     }
@@ -925,9 +951,9 @@ exitloop:
                                 if (mob[j].respawn==0){
                                     for (k=0;k<maxclients;k++){ // Yay moar dirty hax
                                         if (client[k].used==1&&client[k].stage==4){
-                                            strcpy(outbuf, "&7Zombie   &aRESPAWNED                                            ");
-                                            outbuf[9]=0x30+j;
-                                            sendPacket_chatMessage(client[k].socket, 0, outbuf);
+                                            char respawnbuf[64];
+                                            sprintf(respawnbuf, "&7Zombie %d &aRESPAWNED", j);
+                                            sendPacket_chatMessage(client[k].socket, 0, respawnbuf);
                                             sendPacket_spawnPlayer(client[k].socket, j, mob[j].name, mob[j].x, mob[j].y, mob[j].z, mob[j].heading, mob[j].pitch);
                                         }
                                     }
