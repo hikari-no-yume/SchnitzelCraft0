@@ -30,6 +30,7 @@ typedef signed long int32_t;
 #define numzombies 16 // Cos the more the deadlier etc
 //#define numzombies 0
 #define maxclients 64 // Player ID cannot be >127 (< 0 signed) as this means "teleport"
+#define maxsnow 64
 
 #define blockAt(x, y, z) ( ((x)>=0 && (y)>=0 && (z)>=0 && (x)<mapx && (y)<mapy && (z)<mapz) ? (block + (y)*mapx*mapz + (z)*mapz + (x)) : (block) )
 
@@ -71,6 +72,14 @@ struct CLIENT {
         char heading;
         char pitch;
 } CLIENT;
+struct SNOW {
+    short x;
+    short y;
+    short z;
+    char xi; // Increment (speed/direction)
+    char yi; // Increment (speed/direction)
+    char zi;
+} SNOW;
 
 char *block;
 int16_t mapx=256, mapy=128, mapz=256;
@@ -78,6 +87,8 @@ int32_t mapsize = 0;
 struct CLIENT client[maxclients];
 int clients;
 struct MOB mob[maxclients];
+struct SNOW snow[maxsnow];
+int snowenabled = 0;
 
 int def(FILE *source, FILE *dest, int level)
 {
@@ -350,6 +361,19 @@ char touchinglr(short x, short y, short z, char type){
     return num;
 }
 
+void resetSnowBlock(int i) {
+    snow[i].x=rand()%mapx;
+    snow[i].y=mapy-1;
+    snow[i].z=rand()%mapz;
+    //snow[i].xi = rand()%5-2;
+    snow[i].xi = -1;
+    //snow[i].yi = -rand()%3;
+    snow[i].yi = -2;
+    //snow[i].zi = rand()%5-2;
+    snow[i].zi = 0;
+    setBlock_synced(snow[i].x, snow[i].y, snow[i].z, 0x24); // Place new snow block (white cloth)
+}
+
 void backupmap(){
     int32_t header;
     FILE* fp;
@@ -498,6 +522,10 @@ int main(int argc, char* argv[])
         mob[i].pitch = 0;
         mob[i].respawn = 0;
         strcpy(mob[i].name, "&2Zombie&7Mob");
+    }
+    if (snowenabled)
+    for(i = 0; i < maxsnow; i++){
+        resetSnowBlock(i);
     }
 
     // init
@@ -949,6 +977,40 @@ exitloop:
                         }
                     }
                     // *** MOBS END ***
+                    // *** SNOW BEGIN ***
+                    if (snowenabled)
+                    for (j=0; j < maxsnow; j++) {
+                        short x, y, z;
+                        short x2, y2, z2;
+                        char next;
+                        x = snow[j].x;
+                        y = snow[j].y;
+                        z = snow[j].z;
+                        x2 = (snow[j].x+snow[j].xi)%mapx;
+                        y2 = snow[j].y+snow[j].yi;
+                        z2 = (snow[j].z+snow[j].zi)%mapz;
+                        next = getBlock(x2, y2, z2);
+                        if (getBlock(x, y, z) == 0x24) { // Snow block in this location
+                            if (next == 0x24 || next == 0x00) { // Next position is snow/air
+                                setBlock_synced(x, y, z, 0x00); // Clear current snow
+                                setBlock_synced(x2, y2, z2, 0x24); // Place new snow block (white cloth)
+                                snow[j].x = x2;
+                                snow[j].y = y2;
+                                snow[j].z = z2;
+                            }else if (next == 0x02) { // Next position is grass
+                                setBlock_synced(x, y, z, 0x00); // Clear current snow
+                                setBlock_synced(x2, y2, z2, 0x24); // Place new snow block (white cloth)
+                                resetSnowBlock(i);
+                            }else if (snow[j].yi < -1) { // Reduce if moving at increment >1 downward
+                                snow[j].yi = -1;
+                            }else{
+                                setBlock_synced(x, y, z, 0x00);
+                                resetSnowBlock(j);
+                            }
+                        }else{ // Create new snow block
+                            resetSnowBlock(j);
+                        }
+                    }
                 }
             }
         }
